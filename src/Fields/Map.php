@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Dotswan\MapPicker\Fields;
+namespace Doode\MapPicker\Fields;
 
 use Filament\Forms\Components\Field;
-use Dotswan\MapPicker\Contracts\MapOptions;
+use Doode\MapPicker\Contracts\MapOptions;
 use Filament\Forms\Concerns\HasStateBindingModifiers;
 
 class Map extends Field implements MapOptions
