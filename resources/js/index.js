@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         shape.layer.pm.enable();
                         drawItems.addLayer(shape.layer);
 
-                        console.log( JSON.stringify(drawnItems.toGeoJSON()) );
+                        console.log( JSON.stringify(drawItems.toGeoJSON()) );
                     } else {
                         console.log('Not a shape');
                     }
