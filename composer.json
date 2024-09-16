@@ -1,31 +1,34 @@
 {
-    "name": "dotswan/filament-map-picker",
-    "description": "Easily pick and retrieve geo-coordinates using a map-based interface in your Filament applications.",
+    "name": "doode/filament-map-picker",
+    "description": "Easily pick and retrieve geo-coordinates using a map-based interface with geoman extension map draw tools.",
     "keywords": [
-        "dotswan",
+        "doode",
         "laravel",
         "map-picker",
         "filament",
         "filamentphp",
         "filament-map-picker",
-        "filament-v3"
+        "filament-v3",
+        "leaflet-map-picker",
+        "leaflet-geoman",
+        "geoman"
     ],
-    "homepage": "https://github.com/dotswan/filament-map-picker",
+    "homepage": "https://github.com/vitormicillo/filament-map-picker",
     "support": {
-        "issues": "https://github.com/dotswan/filament-map-picker/issues",
-        "source": "https://github.com/dotswan/filament-map-picker"
+        "issues": "https://github.com/vitormicillo/filament-map-picker/issues",
+        "source": "https://github.com/vitormicillo/filament-map-picker"
     },
     "license": "MIT",
     "authors": [
         {
-            "name": "Dotswan",
-            "email": "tech@dotswan.com",
+            "name": "Doode",
+            "email": "doode@doode.com.br",
             "role": "Developer"
         }
     ],
     "require": {
         "php": "^8.1",
-        "filament/filament": "^3.0",
+        "filament/filament": "^3.2",
         "spatie/laravel-package-tools": "^1.15.0",
         "illuminate/contracts": "^10.0 || ^11.0"
     },
@@ -43,13 +46,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Dotswan\\MapPicker\\": "src/",
-            "Dotswan\\MapPicker\\Database\\Factories\\": "database/factories/"
+            "Doode\\MapPicker\\": "src/",
+            "Doode\\MapPicker\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Dotswan\\MapPicker\\Tests\\": "tests/"
+            "Doode\\MapPicker\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -69,10 +72,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Dotswan\\MapPicker\\MapPickerServiceProvider"
+                "Doode\\MapPicker\\MapPickerServiceProvider"
             ],
             "aliases": {
-                "MapPicker": "Dotswan\\MapPicker\\Facades\\MapPicker"
+                "MapPicker": "Doode\\MapPicker\\Facades\\MapPicker"
             }
         }
     },
