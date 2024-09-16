@@ -1,19 +1,14 @@
-# Filament V3 Map Picker
+# Filament V3 Map Picker + Geoman Plugin
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
 [![Software License][ico-license]][link-license]
 
 
-A custom field for Filament that allows you to effortlessly select a location on a map and retrieve geographical coordinates.
-
-
-![270298161-46b97f72-518b-40c5-963b-8e9d39d77d67](https://github.com/dotswan/map-picker/assets/20874565/a5dbda7b-b5c1-4038-9bf9-7a0a4c8ff632)
-
-
 ## Introduction 
 
-Map Picker is a Filament custom field designed to simplify the process of choosing a location on a map and obtaining its geo-coordinates.
+Map Picker is a custom field of Filament designed to simplify the process of selecting a location on a map and obtaining its 
+geo-coordinates with the ease of having the Geoman plugin embedded in the map.
 
 * Features include: 
    * A Field for Filament-v3 with OpenStreetMap Integration
