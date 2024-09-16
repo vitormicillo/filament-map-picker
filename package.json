@@ -1,6 +1,7 @@
 {
     "private": true,
     "type": "module",
+    "version": "1.0.0",
     "scripts": {
         "dev:styles": "npx tailwindcss -i resources/css/index.css -o resources/dist/filament-map-picker.css --postcss --watch",
         "dev:scripts": "node bin/build.js --dev",
