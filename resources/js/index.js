@@ -32,6 +32,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     detectRetina: config.detectRetina,
                 }).addTo(this.map);
 
+                this.map.pm.addControls({
+                    position: 'topleft',
+                    drawCircleMarker: false,
+                    rotateMode: false,
+                });
+
+
+                this.map.on('pm:create', function(e) {
+                    $wire.call('handle_pm_create', e.layer.toGeoJSON());
+                });
+
                 if (config.showMarker) {
                     const markerColor = config.markerColor || "#3b82f6";
                     const svgIcon = L.divIcon({
