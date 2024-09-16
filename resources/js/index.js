@@ -1,6 +1,8 @@
-import * as L from 'leaflet';
+import * as L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import 'leaflet-fullscreen';
 import "@geoman-io/leaflet-geoman-free";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
 document.addEventListener('DOMContentLoaded', () => {
     const mapPicker = ($wire, config, state) => {
@@ -32,8 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     detectRetina: config.detectRetina,
                 }).addTo(this.map);
 
+
                 this.map.pm.addControls({
                     position: 'topleft',
+                    drawMarker: true,
+                    drawPolygon: true,
+                    editMode: true,
+                    deleteMode: true,
                     drawCircleMarker: false,
                     rotateMode: false,
                 });
@@ -81,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.addLocationButton();
                 }
             },
+
             updateLocation: function() {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
@@ -94,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             },
+
             removeMap: function (el) {
                 if (this.marker) {
                     this.marker.remove();
@@ -105,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.map.remove();
                 this.map = null;
             },
+
             getCoordinates: function () {
                 let location = $wire.get(config.statePath) ?? {};
 
@@ -120,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return location;
             },
+
             attach: function (el) {
                 this.createMap(el);
                 const observer = new IntersectionObserver(entries => {
@@ -138,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 observer.observe(el);
             },
+
             fetchCurrentLocation: function () {
                 if ('geolocation' in navigator) {
                     navigator.geolocation.getCurrentPosition(async position => {
@@ -153,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Geolocation is not supported by this browser.');
                 }
             },
+
             addLocationButton: function() {
                 const locationButton = document.createElement('button');
                 locationButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 0C8.25 0 5 3.25 5 7c0 5.25 7 13 7 13s7-7.75 7-13c0-3.75-3.25-7-7-7zm0 10c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-5c-1.11 0-2 .89-2 2s.89 2 2 2 2-.89 2-2-.89-2-2-2z"/></svg>';
@@ -161,18 +174,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 locationButton.onclick = () => this.fetchCurrentLocation();
                 this.map.getContainer().appendChild(locationButton);
             },
+
             init: function() {
                 this.$wire = $wire;
                 this.config = config;
                 this.state = state;
                 $wire.on('refreshMap', this.refreshMap.bind(this));
             },
+
             updateMarker: function() {
                 if (config.showMarker) {
                     this.marker.setLatLng(this.getCoordinates());
                     setTimeout(() => this.updateLocation(), 500);
                 }
             },
+
             refreshMap: function() {
                 this.map.flyTo(this.getCoordinates());
                 this.updateMarker();
