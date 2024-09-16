@@ -1,5 +1,6 @@
 import * as L from 'leaflet';
 import 'leaflet-fullscreen';
+import "@geoman-io/leaflet-geoman-free";
 
 document.addEventListener('DOMContentLoaded', () => {
     const mapPicker = ($wire, config, state) => {
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
 
-                if (config.draggable && 
+                if (config.draggable &&
                     (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat)) {
                     $wire.set(config.statePath, this.map.getCenter(), false);
 
