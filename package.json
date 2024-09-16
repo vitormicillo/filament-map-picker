@@ -1,7 +1,6 @@
 {
     "private": true,
     "type": "module",
-    "version": "1.0.0",
     "scripts": {
         "dev:styles": "npx tailwindcss -i resources/css/index.css -o resources/dist/filament-map-picker.css --postcss --watch",
         "dev:scripts": "node bin/build.js --dev",
@@ -28,6 +27,7 @@
     },
     "dependencies": {
         "@geoman-io/leaflet-geoman-free": "^2.17.0",
+        "esbuild-plugin-url": "^0.0.1",
         "leaflet": "^1.9.4",
         "leaflet-fullscreen": "^1.0.2"
     }

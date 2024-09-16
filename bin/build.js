@@ -25,6 +25,11 @@ const defaultOptions = {
     treeShaking: true,
     target: ['es2020'],
     minify: !isDev,
+    loader: {
+        '.png': 'file', // Add loaders for image files
+        '.jpg': 'file',
+        '.jpeg': 'file',
+    },
     plugins: [{
         name: 'watchPlugin',
         setup: function (build) {
