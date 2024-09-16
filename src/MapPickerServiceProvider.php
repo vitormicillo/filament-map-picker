@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Dotswan\MapPicker;
+namespace Doode\MapPicker;
 
 use Filament\Support\Assets\Js;
 use Filament\Support\Assets\Css;
@@ -28,7 +28,7 @@ class MapPickerServiceProvider extends PackageServiceProvider
             ->hasInstallCommand(function (InstallCommand $command): void {
                 $command
                     ->publishConfigFile()
-                    ->askToStarRepoOnGitHub('dotswan/filament-map-picker');
+                    ->askToStarRepoOnGitHub('doode/filament-map-picker');
             });
 
         $configFileName = $package->shortName();
@@ -69,7 +69,7 @@ class MapPickerServiceProvider extends PackageServiceProvider
 
     protected function getAssetPackageName(): ?string
     {
-        return 'dotswan/filament-map-picker';
+        return 'doode/filament-map-picker';
     }
 
     /**
@@ -122,7 +122,6 @@ class MapPickerServiceProvider extends PackageServiceProvider
      */
     protected function getMigrations(): array
     {
-        return [
-        ];
+        return [];
     }
 }
