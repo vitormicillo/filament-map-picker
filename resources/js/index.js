@@ -50,8 +50,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
 
+                let drawItems = new L.FeatureGroup().addTo(this.map);
+
                 this.map.on('pm:create', function(e) {
-                    console.log(e.layer.toGeoJSON());
+                    if (e.layer && e.layer.pm){
+                        const shape = e;
+                        shape.layer.pm.enable();
+                        drawItems.addLayer(shape.layer);
+
+                        console.log( JSON.stringify(drawnItems.toGeoJSON()) );
+                    } else {
+                        console.log('Not a shape');
+                    }
+
+
                     //$wire.call('handle_pm_create', e.layer.toGeoJSON());
                 });
 
