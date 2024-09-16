@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Dotswan\MapPicker\Infolists;
+namespace Doode\MapPicker\Infolists;
 
 use Filament\Infolists\Components\Entry;
-use Dotswan\MapPicker\Contracts\MapOptions;
+use Doode\MapPicker\Contracts\MapOptions;
 use Closure;
 
 class MapEntry extends Entry implements MapOptions
