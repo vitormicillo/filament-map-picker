@@ -37,9 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 this.map.pm.addControls({
                     position: 'topleft',
-                    drawMarker: true,
                     drawPolygon: true,
-                    editMode: true,
+                    drawRectangle: true,
+                    drawMarker: false,
+                    drawCircle: false,
+                    drawText: false,
+                    drawPolyline: false,
+                    editMode: false,
                     deleteMode: true,
                     drawCircleMarker: false,
                     rotateMode: false,
@@ -47,30 +51,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
                 this.map.on('pm:create', function(e) {
-                    $wire.call('handle_pm_create', e.layer.toGeoJSON());
+                    console.log(e.layer.toGeoJSON());
+                    //$wire.call('handle_pm_create', e.layer.toGeoJSON());
                 });
 
-                if (config.showMarker) {
-                    const markerColor = config.markerColor || "#3b82f6";
-                    const svgIcon = L.divIcon({
-                        html: `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="36" height="36" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`,
-                        className: "",
-                        iconSize: [36, 36],
-                        iconAnchor: [18, 36],
-                    });
-                    this.marker = L.marker([0, 0], {
-                        icon: svgIcon,
-                        draggable: false,
-                        autoPan: true
-                    }).addTo(this.map);
-                    this.map.on('move', () => this.marker.setLatLng(this.map.getCenter()));
-                }
+                // if (config.showMarker) {
+                //     const markerColor = config.markerColor || "#3b82f6";
+                //     const svgIcon = L.divIcon({
+                //         html: `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="36" height="36" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`,
+                //         className: "",
+                //         iconSize: [36, 36],
+                //         iconAnchor: [18, 36],
+                //     });
+                //     this.marker = L.marker([0, 0], {
+                //         icon: svgIcon,
+                //         draggable: false,
+                //         autoPan: true
+                //     }).addTo(this.map);
+                //     this.map.on('move', () => this.marker.setLatLng(this.map.getCenter()));
+                // }
 
-                this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
+                // this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
 
-                this.map.on('locationfound', function () {
-                    that.map.setZoom(config.controls.zoom);
-                });
+                // this.map.on('locationfound', function () {
+                //     that.map.setZoom(config.controls.zoom);
+                // });
 
                 let location = state ?? this.getCoordinates();
                 if (!location.lat && !location.lng) {
