@@ -68,21 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (config.showMyLocationButton) {
                     this.addLocationButton();
                 }
-
-                if (config.liveLocation.send && config.liveLocation.realtime) {
-                    setInterval(() => {
-                        this.fetchCurrentLocation();
-                    }, config.liveLocation.miliseconds);
-                }
             },
             updateLocation: function() {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
 
-                if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
+                if (config.draggable && 
+                    (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat)) {
                     $wire.set(config.statePath, this.map.getCenter(), false);
 
-                    if (config.liveLocation.send) {
+                    if (config.liveLocation) {
                         $wire.$refresh();
                     }
                 }
