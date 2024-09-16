@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Dotswan\MapPicker\Facades;
+namespace Doode\MapPicker\Facades;
 
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Dotswan\MapPicker\MapPicker
+ * @see \Doode\MapPicker\MapPicker
  */
 class MapPicker extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return \Dotswan\MapPicker\MapPicker::class;
+        return \Doose\MapPicker\MapPicker::class;
     }
 }
