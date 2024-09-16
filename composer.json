@@ -1,5 +1,5 @@
 {
-    "name": "doode/filament-map-picker",
+    "name": "dotswan/filament-map-picker",
     "description": "Easily pick and retrieve geo-coordinates using a map-based interface in your Filament applications.",
     "keywords": [
         "dotswan",
@@ -10,22 +10,22 @@
         "filament-map-picker",
         "filament-v3"
     ],
-    "homepage": "https://github.com/doode/filament-map-picker",
+    "homepage": "https://github.com/dotswan/filament-map-picker",
     "support": {
-        "issues": "https://github.com/vitormicillo/filament-map-picker/issues",
-        "source": "https://github.com/vitormicillo/filament-map-picker"
+        "issues": "https://github.com/dotswan/filament-map-picker/issues",
+        "source": "https://github.com/dotswan/filament-map-picker"
     },
     "license": "MIT",
     "authors": [
         {
-            "name": "Doode",
-            "email": "doode@doode.com.br",
+            "name": "Dotswan",
+            "email": "tech@dotswan.com",
             "role": "Developer"
         }
     ],
     "require": {
         "php": "^8.1",
-        "filament/filament": "^3.2",
+        "filament/filament": "^3.0",
         "spatie/laravel-package-tools": "^1.15.0",
         "illuminate/contracts": "^10.0 || ^11.0"
     },
@@ -76,6 +76,6 @@
             }
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "prefer-stable": true
 }
