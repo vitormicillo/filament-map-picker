@@ -16,7 +16,7 @@
     backupStaticProperties="false"
 >
     <testsuites>
-        <testsuite name="Dotswan Test Suite">
+        <testsuite name="Doode Test Suite">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
