@@ -64,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         drawItems.addLayer(shape.layer);
 
                         console.log( JSON.stringify(drawItems.toGeoJSON()) );
+
+                        $wire.dispatch('handle_pm_create', e.layer.toGeoJSON());
                     } else {
 
                         console.log('Not a shape');

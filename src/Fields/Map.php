@@ -282,6 +282,6 @@ class Map extends Field implements MapOptions
 
     public function handle_pm_create($geoJson)
     {
-        ddd($geoJson);
+        dd($geoJson);
     }
 }
