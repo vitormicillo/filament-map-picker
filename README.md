@@ -40,7 +40,7 @@ Additional map options will be added to the package as needed and tested.
 You can easily install the package via Composer:
 
 ```bash
-composer require dotswan/filament-map-picker
+composer require doode/filament-map-picker
 ```
 
 ## Basic Usage
@@ -52,7 +52,7 @@ Resource file:
 namespace App\Filament\Resources;
 use Filament\Resources\Resource;
 use Filament\Resources\Forms\Form;
-use Dotswan\MapPicker\Fields\Map;
+use Doode\MapPicker\Fields\Map;
 ...
 
 class FilamentResource extends Resource
@@ -127,7 +127,7 @@ The MapEntry Infolist field displays a map.
 
 ```php
 
-use Dotswan\MapPicker\Infolists\MapEntry;
+use Doode\MapPicker\Infolists\MapEntry;
 
     public static function infolist(Infolist $infolist): Infolist
     {
@@ -223,11 +223,11 @@ This approach encapsulates both latitude and longitude within a single location 
 
 ## License
 
-[MIT License](LICENSE.md) © Dotswan
+[MIT License](LICENSE.md) © Doode
 
 ## Security
 
-We take security seriously. If you discover any bugs or security issues, please help us maintain a secure project by reporting them through our [`GitHub issue tracker`][link-github-issue]. You can also contact us directly at [tech@dotswan.com](mailto:tech@dotswan.com).
+We take security seriously. If you discover any bugs or security issues, please help us maintain a secure project by reporting them through our [`GitHub issue tracker`][link-github-issue]. You can also contact us directly at [doode@doode.com.br](mailto:doode@doode.com.br).
 
 ## Contribution
 
@@ -246,14 +246,14 @@ If you have a suggestion that would make this better, please fork the repo and c
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/dotswan/filament-map-picker.svg?style=flat-square
 
-[link-workflow-test]: https://github.com/dotswan/filament-map-picker/actions/workflows/ci.yml
-[link-packagist]: https://packagist.org/packages/dotswan/filament-map-picker
-[link-license]: https://github.com/dotswan/filament-map-picker/blob/master/LICENSE.md
-[link-downloads]: https://packagist.org/packages/dotswan/filament-map-picker
-[link-readme]: https://github.com/dotswan/filament-map-picker/blob/master/README.md
-[link-github-issue]: https://github.com/dotswan/filament-map-picker/issues
-[link-docs]: https://github.com/dotswan/filament-map-picker/blob/master/docs/openapi.yaml
-[link-composer-json]: https://github.com/dotswan/filament-map-picker/blob/master/composer.json
-[link-gitignore]: https://github.com/dotswan/filament-map-picker/blob/master/.gitignore
-[link-pint]: https://github.com/dotswan/filament-map-picker/blob/master/pint.json
-[link-author]: https://github.com/dotswan
+[link-workflow-test]: https://github.com/vitormicillo/filament-map-picker/actions/workflows/ci.yml
+[link-packagist]: https://packagist.org/packages/vitormicillo/filament-map-picker
+[link-license]: https://github.com/vitormicillo/filament-map-picker/blob/master/LICENSE.md
+[link-downloads]: https://packagist.org/packages/vitormicillo/filament-map-picker
+[link-readme]: https://github.com/vitormicillo/filament-map-picker/blob/master/README.md
+[link-github-issue]: https://github.com/vitormicillo/filament-map-picker/issues
+[link-docs]: https://github.com/vitormicillo/filament-map-picker/blob/master/docs/openapi.yaml
+[link-composer-json]: https://github.com/vitormicillo/filament-map-picker/blob/master/composer.json
+[link-gitignore]: https://github.com/vitormicillo/filament-map-picker/blob/master/.gitignore
+[link-pint]: https://github.com/vitormicillo/filament-map-picker/blob/master/pint.json
+[link-author]: https://github.com/vitormicillo
