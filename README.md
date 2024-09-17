@@ -4,6 +4,7 @@
 [![Total Downloads][ico-downloads]][link-downloads]
 [![Software License][ico-license]][link-license]
 
+![img.png](img.png)
 
 ## Introduction 
 
@@ -68,20 +69,20 @@ class FilamentResource extends Resource
                         $set('longitude', $state['lng']);
                     })
                     ->afterStateHydrated(function ($state, $record, Set $set): void {
-                        $set('location', ['lat' => $record->latitude, 'lng' => $record->longitude]);
+                        $set('location', ['lat' => $record?->latitude, 'lng' => $record?->longitude]);
                     })
                     ->extraStyles([
                         'min-height: 150vh',
                         'border-radius: 50px'
                     ])
-                    ->liveLocation()
-                    ->showMarker()
+                    ->liveLocation() //true or false
+                    ->showMarker() //true or false
                     ->markerColor("#22c55eff")
-                    ->showFullscreenControl()
-                    ->showZoomControl()
-                    ->draggable()
+                    ->showFullscreenControl() //true or false
+                    ->showZoomControl() //true or false
+                    ->draggable() //true or false
                     ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-                    ->zoom(15)
+                    ->zoom(10)
                     ->detectRetina()
                     ->showMyLocationButton()
                     ->extraTileControl([])
@@ -90,6 +91,62 @@ class FilamentResource extends Resource
                         'zoomSnap'            => 2,
                     ])
            ]);
+    }
+    ...
+}
+```
+
+Other option you can use to test the location update in real time if you want to use the Geoman is:
+```php
+<?php
+namespace App\Filament\Resources;
+use Filament\Resources\Resource;
+use Filament\Resources\Forms\Form;
+use Doode\MapPicker\Fields\Map;
+...
+
+class FilamentResource extends Resource
+{
+    ...
+    public static function form(Form $form)
+    {
+        return $form->schema([
+            Map::make('location')
+                ->label('Location')
+                ->columnSpanFull()
+                ->afterStateUpdated(function (Set $set, ?array $state): void {
+                    if ($state) {
+                        $set('coordinates', json_encode($state));
+                    }
+                })
+                ->afterStateHydrated(function ($state, $record, Set $set): void {
+                    $set('coordinates', $record?->geom);
+                })
+                ->extraStyles([
+                    'min-height: 50vh',
+                    'border-radius: 50px'
+                ])
+                ->liveLocation() //true or false
+                ->showMarker() //true or false
+                ->markerColor("#22c55eff")
+                ->showFullscreenControl() //true or false
+                ->showZoomControl() //true or false
+                ->draggable() //true or false
+                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+                ->zoom(10)
+                ->detectRetina()
+                ->showMyLocationButton()
+                ->extraTileControl([])
+                ->extraControl([
+                    'zoomDelta'           => 1,
+                    'zoomSnap'            => 2,
+                ]),
+           
+            Textarea::make('coordinates')->columnSpanFull()     
+                
+           ]);
+           
+           
     }
     ...
 }
@@ -237,9 +294,9 @@ If you have a suggestion that would make this better, please fork the repo and c
 5. Open a Pull Request
 
 
-[ico-version]: https://img.shields.io/packagist/v/dotswan/filament-map-picker.svg?style=flat-square
+[ico-version]: https://img.shields.io/packagist/v/doode/filament-map-picker.svg?style=flat-square
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-downloads]: https://img.shields.io/packagist/dt/dotswan/filament-map-picker.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/doode/filament-map-picker.svg?style=flat-square
 
 [link-workflow-test]: https://github.com/vitormicillo/filament-map-picker/actions/workflows/ci.yml
 [link-packagist]: https://packagist.org/packages/vitormicillo/filament-map-picker

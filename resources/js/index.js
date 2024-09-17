@@ -53,8 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let drawItems = new L.FeatureGroup().addTo(this.map);
 
                 this.map.on('pm:create', function(e) {
-                    console.info('enter function pm:create');
-
                     if (e.layer && e.layer.pm){
                         console.info('layer is a shape');
                         //console.log(e.layer.toGeoJSON());
