@@ -13,6 +13,6 @@ class MapPicker extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return \Doose\MapPicker\MapPicker::class;
+        return \Doode\MapPicker\MapPicker::class;
     }
 }

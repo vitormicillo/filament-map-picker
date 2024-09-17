@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (e.layer && e.layer.pm){
                         console.info('layer is a shape');
-                        console.log(e.layer.toGeoJSON());
+                        //console.log(e.layer.toGeoJSON());
 
                         const shape = e;
                         shape.layer.pm.enable();
@@ -65,14 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         console.log( JSON.stringify(drawItems.toGeoJSON()) );
 
-                        $wire.dispatch('handle_pm_create', e.layer.toGeoJSON());
+                        $wire.call('handle_pm_create', e.layer.toGeoJSON());
                     } else {
-
                         console.log('Not a shape');
                     }
-
-
-                    //$wire.call('handle_pm_create', e.layer.toGeoJSON());
                 });
 
                 if (config.showMarker) {

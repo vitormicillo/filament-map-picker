@@ -32,11 +32,11 @@ class Map extends Field implements MapOptions
         'detectRetina'         => true,
         'minZoom'              => 0,
         'maxZoom'              => 28,
-        'zoom'                 => 15,
+        'zoom'                 => 10,
         'markerColor'          => '#3b82f6',
-        'liveLocation'         => false,
-        'showMyLocationButton' => false,
-        'default'              => ['lat' => 0 , 'lng' => 0]
+        'liveLocation'         => true,
+        'showMyLocationButton' => true,
+        'default'              => ['lat' => 0.0 , 'lng' => 0.0]
     ];
 
     /**
@@ -282,6 +282,6 @@ class Map extends Field implements MapOptions
 
     public function handle_pm_create($geoJson)
     {
-        dd($geoJson);
+        $this->state = $geoJson;
     }
 }
