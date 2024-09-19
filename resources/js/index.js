@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             style: {
                                 color: config.liveLocation.color || "#FFFFFF",
                                 fillColor: 'blue',
-                                fillOpacity: 0.6,
+                                fillOpacity: 0.5,
                             }
                         });
                         this.map.addLayer(drawItems);
@@ -193,6 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 drawItems.on('pm:edit', (e) => {
                     geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+
+                    $wire.set(config.statePath, {
+                        geojson: JSON.stringify(drawItems.toGeoJSON())
+                    }, false)
+
                     $wire.$refresh();
                 });
 
