@@ -10,8 +10,39 @@ document.addEventListener('DOMContentLoaded', () => {
             map: null,
             tile: null,
             marker: null,
+
+            isVariableValid: function (value){
+                if (typeof value === 'undefined' || value === null) {
+                    return false;
+                }
+
+                if (typeof value === 'string') {
+                    return value.trim() !== '';
+                }
+
+                if (Array.isArray(value)) {
+                    return value.length > 0;
+                }
+
+                if (typeof value === 'object') {
+                    return Object.keys(value).length > 0;
+                }
+
+                if (typeof value === 'number') {
+                    return !isNaN(value);
+                }
+
+                if (typeof value === 'boolean') {
+                    return true;
+                }
+
+                return false;
+            },
+
             createMap: function (el) {
                 const that = this;
+
+                const geoJsonBox = document.getElementById('geomanbox');
 
                 this.map = L.map(el, config.controls);
                 this.map.on('load', () => {
@@ -21,9 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                if (!config.draggable) {
-                    this.map.dragging.disable();
-                }
+                if (!config.draggable) { this.map.dragging.disable(); }
 
                 this.tile = L.tileLayer(config.tilesUrl, {
                     attribution: config.attribution,
@@ -34,40 +63,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     detectRetina: config.detectRetina,
                 }).addTo(this.map);
 
-
+                // Geoman Toolbar Controls
                 this.map.pm.addControls({
-                    position: 'topleft',
+                    position: 'topright',
                     drawPolygon: true,
                     drawRectangle: true,
+                    editMode: true,
                     drawMarker: false,
                     drawCircle: false,
                     drawText: false,
                     drawPolyline: false,
-                    editMode: false,
-                    deleteMode: true,
+                    deleteMode: false,
                     drawCircleMarker: false,
                     rotateMode: false,
                 });
 
-
                 let drawItems = new L.FeatureGroup().addTo(this.map);
-
-                this.map.on('pm:create', function(e) {
-                    if (e.layer && e.layer.pm){
-                        console.info('layer is a shape');
-                        //console.log(e.layer.toGeoJSON());
-
-                        const shape = e;
-                        shape.layer.pm.enable();
-                        drawItems.addLayer(shape.layer);
-
-                        console.log( JSON.stringify(drawItems.toGeoJSON()) );
-
-                        $wire.call('handle_pm_create', e.layer.toGeoJSON());
-                    } else {
-                        console.log('Not a shape');
-                    }
-                });
 
                 if (config.showMarker) {
                     const markerColor = config.markerColor || "#3b82f6";
@@ -106,17 +117,100 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (config.showMyLocationButton) {
                     this.addLocationButton();
                 }
+
+                if (config.liveLocation.send && config.liveLocation.realtime) {
+                    setInterval(() => {
+                        this.fetchCurrentLocation();
+                    }, config.liveLocation.milliseconds);
+                }
+
+                if(geoJsonBox) {
+                    console.log('geomandb field exists in DOM');
+                    if (this.isVariableValid(geoJsonBox.value)) {
+
+                        console.info("Editing Data");
+                        const geomData = JSON.parse(geoJsonBox.value);
+                        // center map with coordinates
+                        const getBounds = this.map.fitBounds(L.geoJSON(geomData).getBounds());
+                        const position = getBounds.getCenter();
+                        this.map.setView(position, 12);
+                        drawItems = new L.geoJSON(geomData, {
+                            style: {
+                                color: config.liveLocation.color || "#FFFFFF",
+                                fillColor: 'blue',
+                                fillOpacity: 0.6,
+                            }
+                        });
+                        this.map.addLayer(drawItems);
+                        this.map.fitBounds(drawItems.getBounds());
+                        this.map.setZoom(13);
+
+                    } else {
+                        console.info("No Data to Edit");
+                        this.map.addLayer(drawItems);
+                        this.map.setZoom(5);
+                    }
+                }
+
+                // To Drawing shapes in the map
+                this.map.on('pm:create', function(e) {
+                    if (e.layer && e.layer.pm){
+                        const shape = e;
+                        shape.layer.pm.enable();
+                        drawItems.addLayer(shape.layer);
+
+                        if (geoJsonBox) {
+                            geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                            console.log( JSON.stringify(drawItems.toGeoJSON()) );
+
+                            $wire.set(config.statePath, {
+                                geojson: JSON.stringify(drawItems.toGeoJSON())
+                            } , false)
+
+                            $wire.$refresh();
+
+                            shape.layer.on('pm:edit', (e) => {
+                                geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                                console.log( JSON.stringify(drawItems.toGeoJSON()) );
+                                $wire.set(config.statePath, {
+                                    geojson: JSON.stringify(drawItems.toGeoJSON())
+                                } , false)
+                                $wire.$refresh();
+                            })
+
+
+
+                        } else {
+                            alert("Field 'geomanbox' was not found in the structure to store geojson data")
+                            console.warn("Field 'geomanbox' was not found in the structure")
+                        }
+
+                        //$wire.call('handle_pm_create', e.layer.toGeoJSON());
+                    } else {
+                        console.log('Not a shape');
+                    }
+                });
+
+                drawItems.on('pm:edit', (e) => {
+                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                    $wire.$refresh();
+                });
+
+                this.map.on('pm:remove', (e) => {
+                   drawItems.removeLayer(e.layer);
+                   geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                   $wire.$refresh();
+                });
+
             },
 
             updateLocation: function() {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
 
-                if (config.draggable &&
-                    (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat)) {
+                if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
                     $wire.set(config.statePath, this.map.getCenter(), false);
-
-                    if (config.liveLocation) {
+                    if (config.liveLocation.send) {
                         $wire.$refresh();
                     }
                 }
@@ -216,6 +310,5 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.mapPicker = mapPicker;
-
     window.dispatchEvent(new CustomEvent('map-script-loaded'));
 });

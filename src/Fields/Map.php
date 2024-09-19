@@ -32,11 +32,11 @@ class Map extends Field implements MapOptions
         'detectRetina'         => true,
         'minZoom'              => 0,
         'maxZoom'              => 28,
-        'zoom'                 => 10,
+        'zoom'                 => 15,
         'markerColor'          => '#3b82f6',
-        'liveLocation'         => true,
-        'showMyLocationButton' => true,
-        'default'              => ['lat' => 0.0 , 'lng' => 0.0]
+        'liveLocation'         => false,
+        'showMyLocationButton' => [false, false, 5000],
+        'default'              => ['lat' => 0 , 'lng' => 0]
     ];
 
     /**
@@ -51,7 +51,7 @@ class Map extends Field implements MapOptions
         'minZoom'           => 1,
         'maxZoom'           => 28,
         'zoom'              => 15,
-        'fullscreenControl' => true,
+        'fullscreenControl' => true
     ];
 
     private array $extraStyle = [];
@@ -71,7 +71,7 @@ class Map extends Field implements MapOptions
         return json_encode(
             array_merge($this->mapConfig, [
                 'statePath' => $this->getStatePath(),
-                'controls'  => array_merge($this->controls, $this->extraControls)
+                'controls' => array_merge($this->controls, $this->extraControls)
             ])
         );
     }
@@ -98,7 +98,6 @@ class Map extends Field implements MapOptions
         $this->mapConfig['draggable'] = $draggable;
         return $this;
     }
-
 
 
     public function defaultLocation(int|float $latitude, float|int $longitude): self
@@ -203,7 +202,6 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
-
     /**
      * Determine if fullscreen box is visible or not.
      * @param bool $show
@@ -226,14 +224,19 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
+
     /**
      * Enable or disable live location updates for the map.
      * @param bool $send
      * @return $this
      */
-    public function liveLocation(bool $send = true): self
+    public function liveLocation(bool $send = true, bool $realtime = false, int $milliseconds = 5000): self
     {
-        $this->mapConfig['liveLocation'] = $send;
+        $this->mapConfig['liveLocation'] = [
+            'send' => $send,
+            'realtime' => $realtime,
+            'milliseconds' => $milliseconds
+        ];
         return $this;
     }
 
@@ -270,7 +273,6 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
-
     /**
      * Setup function
      * @return void
@@ -278,10 +280,5 @@ class Map extends Field implements MapOptions
     protected function setUp(): void
     {
         parent::setUp();
-    }
-
-    public function handle_pm_create($geoJson)
-    {
-        $this->state = $geoJson;
     }
 }

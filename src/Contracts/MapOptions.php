@@ -32,7 +32,5 @@ interface MapOptions
 
     public function markerColor(string $color): self;
 
-    public function liveLocation(bool $send = false): self;
-
-    public function handle_pm_create($geoJson);
+    public function liveLocation(bool $send = false, bool $realtime = false, int $milliseconds = 5000): self;
 }

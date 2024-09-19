@@ -33,7 +33,7 @@ class MapEntry extends Entry implements MapOptions
         'maxZoom'              => 28,
         'zoom'                 => 15,
         'markerColor'          => '#3b82f6',
-        'liveLocation'         => false,
+        'liveLocation'         => [false, false, 5000],
         'showMyLocationButton' => false,
         'default'              => ['lat' => 0 , 'lng' => 0]
     ];
@@ -50,7 +50,7 @@ class MapEntry extends Entry implements MapOptions
         'minZoom'           => 1,
         'maxZoom'           => 28,
         'zoom'              => 15,
-        'fullscreenControl' => true,
+        'fullscreenControl' => true
     ];
 
     private array $extraStyle = [];
@@ -85,7 +85,6 @@ class MapEntry extends Entry implements MapOptions
         return implode(';', $this->extraStyle);
     }
 
-
     /**
      * Determine if user can drag map around or not.
      * @param bool $draggable
@@ -97,7 +96,6 @@ class MapEntry extends Entry implements MapOptions
         $this->mapConfig['draggable'] = $draggable;
         return $this;
     }
-
 
 
     public function defaultLocation(Closure|array $location): self
@@ -230,9 +228,13 @@ class MapEntry extends Entry implements MapOptions
      * @param bool $send
      * @return $this
      */
-    public function liveLocation(bool $send = true): self
+    public function liveLocation(bool $send = true, bool $realtime = false, int $milliseconds = 5000): self
     {
-        $this->mapConfig['liveLocation'] = $send;
+        $this->mapConfig['liveLocation'] = [
+            'send' => $send,
+            'realtime' => $realtime,
+            'milliseconds' => $milliseconds
+        ];
         return $this;
     }
 
@@ -268,8 +270,6 @@ class MapEntry extends Entry implements MapOptions
         $this->mapConfig = array_merge($this->mapConfig, $control);
         return $this;
     }
-
-
     /**
      * Setup function
      * @return void
