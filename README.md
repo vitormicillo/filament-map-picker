@@ -1,10 +1,10 @@
-# Filament V3 Map Picker + Geoman Plugin
+# Filament V3 Map Picker + Geoman Drawing Plugin
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
 [![Software License][ico-license]][link-license]
 
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 ## Introduction 
 
@@ -58,45 +58,42 @@ class FilamentResource extends Resource
     {
         return $form->schema([
             Map::make('location')
-                    ->label('Location')
-                    ->columnSpanFull()
-                    ->default([
-                        'lat' => 40.4168,
-                        'lng' => -3.7038
-                    ])
-                    ->afterStateUpdated(function (Set $set, ?array $state): void {
-                        $set('latitude', $state['lat']);
-                        $set('longitude', $state['lng']);
-                    })
-                    ->afterStateHydrated(function ($state, $record, Set $set): void {
-                        $set('location', ['lat' => $record?->latitude, 'lng' => $record?->longitude]);
-                    })
-                    ->extraStyles([
-                        'min-height: 150vh',
-                        'border-radius: 50px'
-                    ])
-                    ->liveLocation() //true or false
-                    ->showMarker() //true or false
-                    ->markerColor("#22c55eff")
-                    ->showFullscreenControl() //true or false
-                    ->showZoomControl() //true or false
-                    ->draggable() //true or false
-                    ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-                    ->zoom(10)
-                    ->detectRetina()
-                    ->showMyLocationButton()
-                    ->extraTileControl([])
-                    ->extraControl([
-                        'zoomDelta'           => 1,
-                        'zoomSnap'            => 2,
-                    ])
+                ->label('Location')
+                ->columnSpanFull()
+                ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
+                ->afterStateUpdated(function (Set $set, ?array $state): void {
+                    $set('latitude', $state['lat']);
+                    $set('longitude', $state['lng']);
+                })
+                ->afterStateHydrated(function ($state, $record, Set $set): void {
+                    $set('location', ['lat' => $record->latitude, 'lng' => $record->longitude]);
+                })
+                ->extraStyles([
+                    'min-height: 150vh',
+                    'border-radius: 50px'
+                ])
+                ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
+                ->showMarker()
+                ->markerColor("#22c55eff")
+                ->showFullscreenControl()
+                ->showZoomControl()
+                ->draggable()
+                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+                ->zoom(15)
+                ->detectRetina()
+                ->showMyLocationButton()
+                ->extraTileControl([])
+                ->extraControl([
+                    'zoomDelta'           => 1,
+                    'zoomSnap'            => 2,
+                ])
            ]);
     }
     ...
 }
 ```
 
-Other option you can use to test the location update in real time if you want to use the Geoman is:
+Other option you can use to test Geoman shapes is:
 ```php
 <?php
 namespace App\Filament\Resources;
@@ -114,6 +111,7 @@ class FilamentResource extends Resource
             Map::make('location')
                 ->label('Location')
                 ->columnSpanFull()
+                ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
                 ->afterStateUpdated(function (Set $set, ?array $state): void {
                     if ($state) {
                         $set('coordinates', json_encode($state));
@@ -126,7 +124,7 @@ class FilamentResource extends Resource
                     'min-height: 50vh',
                     'border-radius: 50px'
                 ])
-                ->liveLocation() //true or false
+                ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
                 ->showMarker() //true or false
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl() //true or false
@@ -152,6 +150,23 @@ class FilamentResource extends Resource
 }
 ```
 
+#### `liveLocation` Option
+
+The `liveLocation` method accepts three parameters:
+
+1. **`bool $send`:** Determines if the user's live location should be sent.
+2. **`bool $realtime`:** Controls whether the live location should be sent to the server periodically.
+3. **`int $milliseconds`:** Sets the interval (in milliseconds) at which the user's location is updated and sent to the server.
+
+Example:
+
+```php
+Map::make('location')
+    ->liveLocation(true, true, 10000)  // Updates live location every 10 seconds
+    ->showMarker()
+    ->draggable()
+```
+
 If you wish to update the map location and marker either through an action or after altering other input values, you can trigger a refresh of the map using the following approach:
 
 ```php
@@ -164,9 +179,9 @@ Actions::make([
     Action::make('Set Default Location')
         ->icon('heroicon-m-map-pin')
         ->action(function (Set $set, $state, $livewire): void {
-            $set('location', ['lat' => '52.35510989541003', 'lng' => '4.883422851562501']);
-            $set('latitude', '52.35510989541003');
-            $set('longitude', '4.883422851562501');
+            $set('location', ['lat' => '52.8027', 'lng' => '-1.0546']);
+            $set('latitude', '52.8027');
+            $set('longitude', '-1.0546');
             $livewire->dispatch('refreshMap');
         })
 ])->verticalAlignment(VerticalAlignment::Start);
@@ -178,29 +193,27 @@ Actions::make([
 The MapEntry Infolist field displays a map.
 
 ```php
-
 use Doode\MapPicker\Infolists\MapEntry;
 
-    public static function infolist(Infolist $infolist): Infolist
-    {
-        return $infolist
-            ->schema([
-                MapEntry::make('location')
-                    ->extraStyles([
-                        'min-height: 50vh',
-                        'border-radius: 50px'
-                    ])
-                    ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude])
-                    ->showMarker()
-                    ->markerColor("#22c55eff")
-                    ->showFullscreenControl()
-                    ->draggable(false)
-                    ->zoom(15),
+public static function infolist(Infolist $infolist): Infolist
+{
+    return $infolist
+        ->schema([
+            MapEntry::make('location')
+                ->extraStyles([
+                    'min-height: 50vh',
+                    'border-radius: 50px'
+                ])
+                ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude])
+                ->showMarker()
+                ->markerColor("#22c55eff")
+                ->showFullscreenControl()
+                ->draggable(false)
+                ->zoom(15),
 
-                .....
-            ]);
-    }
-
+            .....
+        ]);
+}
 ```
 <hr/>
 
@@ -211,7 +224,7 @@ This section explains how to handle and display map locations within your applic
 
 **Step 1: Define Your Database Schema**
 
-Ensure your database table includes latitude and longitude columns. 
+Ensure your database table includes latitude and longitude columns.
 This is essential for storing the coordinates of your locations. You can define your table schema as follows:
 
 ```php
@@ -221,7 +234,7 @@ $table->double('longitude')->nullable();
 
 **Step 2: Retrieve and Set Coordinates**
 
-When loading a record, ensure you correctly retrieve and set the latitude and longitude values. 
+When loading a record, ensure you correctly retrieve and set the latitude and longitude values.
 Use the following method within your form component:
 
 ```php
@@ -273,19 +286,23 @@ This approach encapsulates both latitude and longitude within a single location 
 
 
 
+
 ## License
 
 [MIT License](LICENSE.md) © Doode
 
 ## Security
 
-We take security seriously. If you discover any bugs or security issues, please help us maintain a secure project by reporting them through our [`GitHub issue tracker`][link-github-issue]. You can also contact us directly at [doode@doode.com.br](mailto:doode@doode.com.br).
+We take security seriously. 
+If you discover any bugs or security issues, please help us maintain a secure project by reporting them through our [`GitHub issue tracker`][link-github-issue]. 
+You can also contact us directly at [doode@doode.com.br](mailto:doode@doode.com.br).
 
 ## Contribution
 
-We welcome contributions! contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are greatly appreciated.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement". Don't forget to give the project a star! Thanks again!
+We welcome contributions! contributions are what make the open source community such an amazing place to learn, inspire, and create. 
+Any contributions you make are greatly appreciated.
+If you have a suggestion that would make this better, please fork the repo and create a pull request. 
+You can also simply open an issue with the tag "enhancement". Don't forget to give the project a star! Thanks again!
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
