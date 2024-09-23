@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // center map with coordinates
                         const getBounds = this.map.fitBounds(L.geoJSON(geomData).getBounds());
                         const position = getBounds.getCenter();
-                        this.map.setView(position, 12);
+                        this.map.setView(position, 8);
                         drawItems = new L.geoJSON(geomData, {
                             style: {
                                 color: config.liveLocation.color || "#FFFFFF",
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         this.map.addLayer(drawItems);
                         this.map.fitBounds(drawItems.getBounds());
-                        this.map.setZoom(13);
+                        this.map.setZoom(8);
 
                     } else {
                         console.info("No Data to Edit");
@@ -177,8 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 } , false)
                                 $wire.$refresh();
                             })
-
-
 
                         } else {
                             alert("Field 'geomanbox' was not found in the structure to store geojson data")
