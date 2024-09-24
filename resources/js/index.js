@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.info("No Data to Edit");
                         this.map.addLayer(drawItems);
-                        this.map.setZoom(5);
+                        this.map.setZoom(10);
                     }
                 }
 
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             })
 
                         } else {
-                            alert("Field 'geomanbox' was not found in the structure to store geojson data")
+                            alert("THis is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
                             console.warn("Field 'geomanbox' was not found in the structure")
                         }
 
