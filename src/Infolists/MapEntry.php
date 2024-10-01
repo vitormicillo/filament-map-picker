@@ -24,6 +24,7 @@ class MapEntry extends Entry implements MapOptions
         'statePath'            => '',
         'draggable'            => true,
         'showMarker'           => true,
+        'showGeomanToolbar'    => true,
         'tilesUrl'             => 'http://tile.openstreetmap.org/{z}/{x}/{y}.png',
         'attribution'          => null,
         'zoomOffset'           => -1,
@@ -166,6 +167,13 @@ class MapEntry extends Entry implements MapOptions
         $this->mapConfig['showMarker'] = $show;
         return $this;
     }
+
+    public function showGeomanToolbar(bool $show = true): self
+    {
+        $this->mapConfig['showGeomanToolbar'] = $show;
+        return $this;
+    }
+
 
     /**
      * Set tiles url

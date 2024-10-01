@@ -25,6 +25,7 @@ class Map extends Field implements MapOptions
         'statePath'            => '',
         'draggable'            => true,
         'showMarker'           => true,
+        'showGeomanToolbar'    => true,
         'tilesUrl'             => 'http://tile.openstreetmap.org/{z}/{x}/{y}.png',
         'attribution'          => null,
         'zoomOffset'           => -1,
@@ -166,6 +167,12 @@ class Map extends Field implements MapOptions
     public function showMarker(bool $show = true): self
     {
         $this->mapConfig['showMarker'] = $show;
+        return $this;
+    }
+
+    public function showGeomanToolbar(bool $show = true): self
+    {
+        $this->mapConfig['showGeomanToolbar'] = $show;
         return $this;
     }
 

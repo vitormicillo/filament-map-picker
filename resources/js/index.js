@@ -64,19 +64,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).addTo(this.map);
 
                 // Geoman Toolbar Controls
-                this.map.pm.addControls({
-                    position: 'topright',
-                    drawPolygon: true,
-                    drawRectangle: true,
-                    editMode: true,
-                    drawMarker: false,
-                    drawCircle: false,
-                    drawText: false,
-                    drawPolyline: false,
-                    deleteMode: false,
-                    drawCircleMarker: false,
-                    rotateMode: false,
-                });
+                if (config.showGeomanToolbar) {
+                    this.map.pm.addControls({
+                        position: 'topright',
+                        drawPolygon: true,
+                        drawRectangle: true,
+                        editMode: true,
+                        drawMarker: false,
+                        drawCircle: false,
+                        drawText: false,
+                        drawPolyline: false,
+                        deleteMode: false,
+                        drawCircleMarker: false,
+                        rotateMode: false,
+                    });
+                }
+
 
                 let drawItems = new L.FeatureGroup().addTo(this.map);
 

@@ -18,6 +18,8 @@ interface MapOptions
 
     public function showMarker(bool $show = true): self;
 
+    public function showGeomanToolbar(bool $show = true): self;
+
     public function tilesUrl(string $url): self;
 
     public function detectRetina(bool $detectRetina = true): self;

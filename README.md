@@ -74,6 +74,7 @@ class FilamentResource extends Resource
                 ])
                 ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
                 ->showMarker()
+                ->showGeomanToolbar() // Display or not the geoman tools bar
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
                 ->showZoomControl()
@@ -126,6 +127,7 @@ class FilamentResource extends Resource
                 ])
                 ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
                 ->showMarker() //true or false
+                ->showGeomanToolbar() //true or false
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl() //true or false
                 ->showZoomControl() //true or false
@@ -164,6 +166,7 @@ Example:
 Map::make('location')
     ->liveLocation(true, true, 10000)  // Updates live location every 10 seconds
     ->showMarker()
+    ->showGeomanToolbar()
     ->draggable()
 ```
 
@@ -206,6 +209,7 @@ public static function infolist(Infolist $infolist): Infolist
                 ])
                 ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude])
                 ->showMarker()
+                ->showGeomanToolbar()
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
                 ->draggable(false)
