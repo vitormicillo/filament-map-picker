@@ -1,17 +1,18 @@
-import * as L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import 'leaflet-fullscreen';
-import "@geoman-io/leaflet-geoman-free";
-import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+import * as L
+    from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import 'leaflet-fullscreen'
+import '@geoman-io/leaflet-geoman-free'
+import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 
 document.addEventListener('DOMContentLoaded', () => {
-    const mapPicker = ($wire, config, state) => {
+    window.mapPicker = ($wire, config, state) => {
         return {
             map: null,
             tile: null,
             marker: null,
 
-            isVariableValid: function (value){
+            isVariableValid: function(value) {
                 if (typeof value === 'undefined' || value === null) {
                     return false;
                 }
@@ -35,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return typeof value === 'boolean';
             },
 
-            createMap: function (el) {
+            createMap: function(el) {
                 const that = this;
 
                 const geoJsonBox = document.getElementById('geomanbox');
@@ -48,7 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                if (!config.draggable) { this.map.dragging.disable(); }
+                if (!config.draggable) {
+                    this.map.dragging.disable();
+                }
 
                 this.tile = L.tileLayer(config.tilesUrl, {
                     attribution: config.attribution,
@@ -97,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
 
-                this.map.on('locationfound', function () {
+                this.map.on('locationfound', function() {
                     that.map.setZoom(config.controls.zoom);
                 });
 
@@ -123,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, config.liveLocation.milliseconds);
                 }
 
-                if(geoJsonBox) {
+                if (geoJsonBox) {
                     console.log('geomandb field exists in DOM');
                     if (this.isVariableValid(geoJsonBox.value)) {
 
@@ -153,27 +156,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // To Drawing shapes in the map
                 this.map.on('pm:create', function(e) {
-                    if (e.layer && e.layer.pm){
+                    if (e.layer && e.layer.pm) {
                         const shape = e;
                         shape.layer.pm.enable();
                         drawItems.addLayer(shape.layer);
 
                         if (geoJsonBox) {
                             geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                            console.log( JSON.stringify(drawItems.toGeoJSON()) );
+                            console.log(JSON.stringify(drawItems.toGeoJSON()));
 
                             $wire.set(config.statePath, {
                                 geojson: JSON.stringify(drawItems.toGeoJSON())
-                            } , false)
+                            }, false)
 
                             $wire.$refresh();
 
                             shape.layer.on('pm:edit', (e) => {
                                 geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                                console.log( JSON.stringify(drawItems.toGeoJSON()) );
+                                console.log(JSON.stringify(drawItems.toGeoJSON()));
                                 $wire.set(config.statePath, {
                                     geojson: JSON.stringify(drawItems.toGeoJSON())
-                                } , false)
+                                }, false)
                                 $wire.$refresh();
                             })
 
@@ -199,9 +202,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 this.map.on('pm:remove', (e) => {
-                   drawItems.removeLayer(e.layer);
-                   geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                   $wire.$refresh();
+                    drawItems.removeLayer(e.layer);
+                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                    $wire.$refresh();
                 });
 
             },
@@ -218,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
-            removeMap: function (el) {
+            removeMap: function(el) {
                 if (this.marker) {
                     this.marker.remove();
                     this.marker = null;
@@ -230,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.map = null;
             },
 
-            getCoordinates: function () {
+            getCoordinates: function() {
                 let location = $wire.get(config.statePath) ?? {};
 
                 const hasValidCoordinates = location.hasOwnProperty('lat') && location.hasOwnProperty('lng') &&
@@ -246,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return location;
             },
 
-            attach: function (el) {
+            attach: function(el) {
                 this.createMap(el);
                 const observer = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
@@ -265,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 observer.observe(el);
             },
 
-            fetchCurrentLocation: function () {
+            fetchCurrentLocation: function() {
                 if ('geolocation' in navigator) {
                     navigator.geolocation.getCurrentPosition(async position => {
                         const currentPosition = new L.LatLng(position.coords.latitude, position.coords.longitude);
@@ -309,7 +312,5 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     };
-
-    window.mapPicker = mapPicker;
     window.dispatchEvent(new CustomEvent('map-script-loaded'));
 });
