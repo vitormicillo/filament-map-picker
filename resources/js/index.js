@@ -32,11 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return !isNaN(value);
                 }
 
-                if (typeof value === 'boolean') {
-                    return true;
-                }
-
-                return false;
+                return typeof value === 'boolean';
             },
 
             createMap: function (el) {
@@ -63,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     detectRetina: config.detectRetina,
                 }).addTo(this.map);
 
-                // Geoman Toolbar Controls
+                // Geoman Toolbar Controls, hide or enable it from filament resource
                 if (config.showGeomanToolbar) {
                     this.map.pm.addControls({
                         position: 'topright',
@@ -274,7 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     navigator.geolocation.getCurrentPosition(async position => {
                         const currentPosition = new L.LatLng(position.coords.latitude, position.coords.longitude);
                         await this.map.flyTo(currentPosition);
-
                         this.updateLocation();
                         this.updateMarker();
                     }, error => {
