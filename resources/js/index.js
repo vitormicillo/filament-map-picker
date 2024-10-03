@@ -2,6 +2,7 @@ import * as L
     from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import 'leaflet-fullscreen'
+import 'leaflet-fullscreen/dist/leaflet.fullscreen.css';
 import '@geoman-io/leaflet-geoman-free'
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 
@@ -60,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tileSize: config.tileSize,
                     zoomOffset: config.zoomOffset,
                     detectRetina: config.detectRetina,
+                    fullscreen: config.fullscreenControl
                 }).addTo(this.map);
 
                 // Geoman Toolbar Controls, hide or enable it from filament resource
