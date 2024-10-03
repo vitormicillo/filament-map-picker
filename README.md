@@ -4,7 +4,7 @@
 [![Total Downloads][ico-downloads]][link-downloads]
 [![Software License][ico-license]][link-license]
 
-![img_1.png](img_1.png)
+![img.png](img.png)
 
 ## Introduction 
 
@@ -12,7 +12,7 @@ Map Picker is a custom field of Filament designed to simplify the process of sel
 geo-coordinates with the ease of having the Geoman plugin embedded in the map.
 
 * Features include: 
-   * A Field for Filament-v3 with OpenStreetMap Integration
+   * A Field for Filament-v3 with Leaflet Map Integration
    * Receive Real-time Coordinates Upon Marker Movement Completion
    * Tailor Controls and Marker Appearance to Your Preferences
 * Latest versions of PHP and Filament
@@ -28,8 +28,7 @@ geo-coordinates with the ease of having the Geoman plugin embedded in the map.
 Map Picker currently supports the following map:
 
 1. Open Street Map (OSM)
-
-Additional map options will be added to the package as needed and tested.
+2. Google Maps
 
 ## Installation
 
@@ -252,13 +251,8 @@ Use the following method within your form component:
 Add hidden form fields for latitude and longitude to your form. This ensures the values are present but not visible to the user:
 
 ```php
-TextInput::make('latitude')
-    ->hiddenLabel()
-    ->hidden(),
-
-TextInput::make('longitude')
-    ->hiddenLabel()
-    ->hidden()
+TextInput::make('latitude')->hidden(),
+TextInput::make('longitude')->hidden()
 ```
 
 If you prefer to display these values in a read-only format, replace `hidden()` with `readOnly()`.
