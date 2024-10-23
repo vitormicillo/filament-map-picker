@@ -1,10 +1,7 @@
-import * as L
-    from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import * as L from 'leaflet'
 import 'leaflet-fullscreen'
-import 'leaflet-fullscreen/dist/leaflet.fullscreen.css';
 import '@geoman-io/leaflet-geoman-free'
-import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
+import domtoimage from 'dom-to-image';
 
 document.addEventListener('DOMContentLoaded', () => {
     window.mapPicker = ($wire, config, state) => {
@@ -294,11 +291,65 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.map.getContainer().appendChild(locationButton);
             },
 
+            captureAndUploadMapImage: function(){
+                const mapContainer = this.map.getContainer();
+
+                // Hide controls before generating image
+                const controlElements = mapContainer.querySelectorAll('.leaflet-control-container, .leaflet-top, .leaflet-bottom');
+                controlElements.forEach(element => {
+                    element.style.display = 'none';
+                });
+
+                domtoimage.toBlob(mapContainer, null)
+                    .then((blob) => {
+
+                        // Restore controls after capturing the image
+                        controlElements.forEach(element => {
+                            element.style.display = '';
+                        });
+
+                        // Create a FormData object
+                        const formData = new FormData();
+                        formData.append('map_image', blob, 'map.png');
+
+                        // Send the image to the server using fetch API
+                        fetch('/admin/upload-map-image', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            },
+                            body: formData,
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    console.info('Map image uploaded successfully');
+                                    alert('Map image uploaded successfully');
+                                } else {
+                                    console.error('Error uploading map image:', data.message);
+                                    alert('Error uploading map image:'+ data.message);
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('Error uploading map image:', error);
+                                alert('Error capturing map image:'+ error);
+                            });
+                    })
+                    .catch((error) => {
+                        console.error('Error capturing map image:', error);
+                        alert('Error capturing map image:'+ error);
+                    });
+            },
+
             init: function() {
                 this.$wire = $wire;
                 this.config = config;
                 this.state = state;
                 $wire.on('refreshMap', this.refreshMap.bind(this));
+
+                window.addEventListener('capture-map-image', () => {
+                    this.captureAndUploadMapImage();
+                })
             },
 
             updateMarker: function() {
