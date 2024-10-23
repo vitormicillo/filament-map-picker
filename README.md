@@ -150,6 +150,34 @@ class FilamentResource extends Resource
     ...
 }
 ```
+## New feature to capture image from the map
+![img_1.png](img_1.png)
+
+This is an example of the code in how to trigger the function in the map in order to capture the snapshot.
+Note: Latitude and longitude are not mandatory, you can move the map and trigger the action to capture the image.
+
+“If you have Geoman shapes drawn on your map, they will be included in the generated image.”
+```php
+Actions::make([
+   Action::make('capture_map_image')
+       ->hiddenLabel()
+       ->icon('heroicon-m-camera')
+       ->color('info')
+       ->action(function (callable $get, callable $set, $livewire) {
+           $lat = $get('lat');
+           $lon = $get('lon');
+
+           if(!empty($lat) && !empty($lon)){
+               $livewire->dispatch('capture-map-image');
+           }
+       })
+   ])->columnSpan(1)
+```
+In your web.php file is necessary to add the route, i.e you can use a custom Controller
+The map feature will post the blob image to this url /upload-map-image
+```php
+Route::post('/upload-map-image', [MapController::class, 'uploadMapImage'])->name('upload.map.image');
+```
 
 #### `liveLocation` Option
 
