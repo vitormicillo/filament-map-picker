@@ -323,8 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    console.info('Map image uploaded successfully');
-                                    alert('Map image uploaded successfully');
+                                    console.info('Snapshot successfully generated');
+                                    alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
                                 } else {
                                     console.error('Error uploading map image:', data.message);
                                     alert('Error uploading map image:'+ data.message);
