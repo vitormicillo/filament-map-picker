@@ -310,6 +310,76 @@ class YourModel extends Model
 
 This approach encapsulates both latitude and longitude within a single location attribute, streamlining your code.
 
+# Updates for version 1.4.0
+### User can customize marker icons now, It is possible to use SVG or base64 encoded value
+
+Example in how to use custom SVG Icon when "edit" a record from database
+
+```php
+                   Map::make('location')
+                       ->hiddenLabel()
+                       ->columnSpanFull()
+                       ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
+                       ->afterStateHydrated(function (callable $set, callable $get, $state, ?Model $record) {
+                           if ($record) {
+                               $icon = YourModel::find($record->databasefield)->base64_image;
+
+                               $set('location', [
+                                       'lat' => $record->lat,
+                                       'lng' => $record->lon,
+                                       'icon' => $icon //Insert this icon key with the value
+                                   ]);
+                           }
+                       })
+                       ->extraStyles(['min-height: 30vh', 'border-radius: 5px'])
+                       ->liveLocation(false, false, 5000)
+                       ->showMarker()
+                       ->markerColor("#FF0000")
+                       ->showGeomanToolbar(false)
+                       ->showFullscreenControl(true)
+                       ->showZoomControl()
+                       ->draggable()
+                       ->tilesUrl(self::getMapBox())
+                       ->zoom(6)
+                       ->detectRetina()
+                       ->showMyLocationButton(false)
+                       ->extraControl(['zoomDelta' => 1, 'zoomSnap' => 2]),
+```
+Another way to update in real time if you have a list of icons in a dropdown list
+You can display the icon in the list as well and use this icon to set as a marker in the map, like the example below.
+
+```php
+                    Select::make('category_id')
+                        ->label('Category')
+                        ->suffixIcon('heroicon-s-square-3-stack-3d')
+                        ->options(function () {
+                            return YourModel::where('is_active', true)->get()
+                                ->mapWithKeys(function ($item) {
+                                    return [
+                                        $item->id =>
+                                        "<div style='display: flex; align-items: center;'>
+                                            <img src='{$item->base64_image}' alt='category_icon' style='width: 20px; height: 20px; margin-right: 8px;' />
+                                            <span>{$item->name}</span>
+                                        </div>",
+                                    ];
+                                })
+                                ->toArray();
+                        })
+                        ->searchable()
+                        ->allowHtml()
+                        ->required()
+                        ->reactive()
+                        ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire){
+                            $model = YourModel::find($state);
+                            if($model && $model->iconcolumnname) {
+                                $livewire->dispatch('update-marker-icon', ['icon' => $category->iconcolumnname]);
+                            } else {
+                               $livewire->dispatch('update-marker-icon',['icon' => null]) ;
+                            }
+                        }),
+```
+
+You can do it in your way, just call `$livewire` and pass the parameter `'update-marker-icon'`
 
 
 
