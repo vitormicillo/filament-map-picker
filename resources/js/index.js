@@ -36,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             createMap: function(el) {
                 const that = this;
-
                 const geoJsonBox = document.getElementById('geomanbox');
 
                 this.map = L.map(el, config.controls);
@@ -78,23 +77,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-
                 let drawItems = new L.FeatureGroup().addTo(this.map);
 
                 if (config.showMarker) {
                     const markerColor = config.markerColor || "#3b82f6";
                     const svgIcon = L.divIcon({
-                        html: `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="36" height="36" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`,
+                        html: this.defaultIconMarker(markerColor),
                         className: "",
-                        iconSize: [36, 36],
+                        iconSize: [26, 26],
                         iconAnchor: [18, 36],
                     });
-                    this.marker = L.marker([0, 0], {
+                    this.marker = L.marker([0,0], {
                         icon: svgIcon,
                         draggable: false,
                         autoPan: true
                     }).addTo(this.map);
-                    this.map.on('move', () => this.marker.setLatLng(this.map.getCenter()));
+                    this.moveMarkerToCenter = () => this.marker.setLatLng(this.map.getCenter());
+                    this.map.on('move', this.moveMarkerToCenter);
                 }
 
                 this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
@@ -211,6 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
             updateLocation: function() {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
+
+                // User can pass extra parameter to indicate a different marker icon
+                if(coordinates.icon){
+                    this.fetchInitialCategoryIcon(coordinates.icon);
+                }
 
                 if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
                     $wire.set(config.statePath, this.map.getCenter(), false);
@@ -349,7 +353,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 window.addEventListener('capture-map-image', () => {
                     this.captureAndUploadMapImage();
+                });
+
+                window.addEventListener('update-map-marker', (event)  => {
+                    const { lat, lng } = event.detail[0];
+                    this.updateMarkerPosition(lat,lng);
                 })
+
+                window.addEventListener('update-marker-icon', (event) => {
+                    const icon = event.detail[0];
+                    console.log(icon);
+                    this.updateMarkerIcon(icon);
+                });
             },
 
             updateMarker: function() {
@@ -357,6 +372,80 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.marker.setLatLng(this.getCoordinates());
                     setTimeout(() => this.updateLocation(), 500);
                 }
+            },
+
+            // Function used for live updated after map rendered
+            // and user set map position on PageResource
+            updateMarkerPosition: function(lat, lng) {
+                if (this.marker) {
+                    // Update marker position and fix marker in the position
+                    this.marker.setLatLng([lat, lng]);
+                    this.map.off('move', this.moveMarkerToCenter);
+                } else {
+                    // Create the marker if it doesn't exist
+                    const markerColor = this.config.markerColor || "#3b82f6";
+                    const svgIcon = L.divIcon({
+                        html: this.defaultIconMarker(markerColor),
+                        className: "",
+                        iconSize: [20, 20],
+                        iconAnchor: [18, 36],
+                    });
+                    this.marker = L.marker([lat, lng], {
+                        icon: svgIcon,
+                        draggable: false,
+                        autoPan: true
+                    }).addTo(this.map);
+                }
+            },
+
+            // Function used for live update icon based on
+            // category selected in Filament Resource
+            // To use this is necessary encode image with base64
+            updateMarkerIcon: function(base64Icon) {
+                if (this.marker) {
+                    let newIcon;
+                    if (base64Icon['icon']) {
+                        // Create a new icon
+                        newIcon = L.icon({
+                            iconUrl: base64Icon['icon'],
+                            iconSize: [26, 26],
+                            iconAnchor: [18, 36],
+                        });
+                    } else {
+                        // Use the default icon
+                        const markerColor = this.config.markerColor || "#3b82f6";
+                        newIcon = L.divIcon({
+                            html: this.defaultIconMarker(markerColor),
+                            className: "",
+                            iconSize: [26, 26],
+                            iconAnchor: [18, 36],
+                        });
+                    }
+
+                    this.marker.setIcon(newIcon);
+                }
+            },
+
+            // Editing a record, if user select a different marker
+            // this function updated maps using the icon url
+            fetchInitialCategoryIcon: function(icon) {
+                if(this.marker){
+                    let newIcon;
+                    if(icon){
+                        console.log('Insert icon from category')
+                        newIcon = L.icon({
+                            iconUrl: icon,
+                            iconSize: [26, 26],
+                            iconAnchor: [18, 36],
+                        });
+
+                        this.marker.setIcon(newIcon);
+                    }
+                }
+            },
+
+            defaultIconMarker: function(markerColor){
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="36" height="36" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             refreshMap: function() {
