@@ -34,5 +34,7 @@ interface MapOptions
 
     public function markerColor(string $color): self;
 
+    public function iconSize(int $size): self;
+
     public function liveLocation(bool $send = false, bool $realtime = false, int $milliseconds = 5000): self;
 }

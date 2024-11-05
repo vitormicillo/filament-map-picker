@@ -73,6 +73,7 @@ class FilamentResource extends Resource
                 ])
                 ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
                 ->showMarker()
+                ->iconSize(32)
                 ->showGeomanToolbar() // Display or not the geoman tools bar
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
@@ -126,6 +127,7 @@ class FilamentResource extends Resource
                 ])
                 ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
                 ->showMarker() //true or false
+                ->iconSize(32) //integer value
                 ->showGeomanToolbar() //true or false
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl() //true or false
@@ -193,6 +195,7 @@ Example:
 Map::make('location')
     ->liveLocation(true, true, 10000)  // Updates live location every 10 seconds
     ->showMarker()
+    ->iconSize(32)
     ->showGeomanToolbar()
     ->draggable()
 ```
@@ -236,6 +239,7 @@ public static function infolist(Infolist $infolist): Infolist
                 ])
                 ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude])
                 ->showMarker()
+                ->iconSize(32)
                 ->showGeomanToolbar()
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
@@ -310,8 +314,9 @@ class YourModel extends Model
 
 This approach encapsulates both latitude and longitude within a single location attribute, streamlining your code.
 
-# Updates for version 1.4.0
+# Updates for version 1.4.0 and above
 ### User can customize marker icons now, It is possible to use SVG or base64 encoded value
+### User can set the marker size using `->iconSize()`
 
 Example in how to use custom SVG Icon when "edit" a record from database
 
@@ -334,6 +339,7 @@ Example in how to use custom SVG Icon when "edit" a record from database
                        ->extraStyles(['min-height: 30vh', 'border-radius: 5px'])
                        ->liveLocation(false, false, 5000)
                        ->showMarker()
+                       ->iconSize(32)
                        ->markerColor("#FF0000")
                        ->showGeomanToolbar(false)
                        ->showFullscreenControl(true)

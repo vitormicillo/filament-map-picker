@@ -84,8 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const svgIcon = L.divIcon({
                         html: this.defaultIconMarker(markerColor),
                         className: "",
-                        iconSize: [26, 26],
-                        iconAnchor: [18, 36],
+                        iconSize: [this.config.iconSize, this.config.iconSize],
+                        //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
                     });
                     this.marker = L.marker([0,0], {
                         icon: svgIcon,
@@ -127,8 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (geoJsonBox) {
                     console.log('geomandb field exists in DOM');
                     if (this.isVariableValid(geoJsonBox.value)) {
-
-                        console.info("Editing Data");
                         const geomData = JSON.parse(geoJsonBox.value);
                         // center map with coordinates
                         const getBounds = this.map.fitBounds(L.geoJSON(geomData).getBounds());
@@ -161,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (geoJsonBox) {
                             geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                            console.log(JSON.stringify(drawItems.toGeoJSON()));
 
                             $wire.set(config.statePath, {
                                 geojson: JSON.stringify(drawItems.toGeoJSON())
@@ -171,7 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             shape.layer.on('pm:edit', (e) => {
                                 geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                                console.log(JSON.stringify(drawItems.toGeoJSON()));
                                 $wire.set(config.statePath, {
                                     geojson: JSON.stringify(drawItems.toGeoJSON())
                                 }, false)
@@ -179,11 +175,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             })
 
                         } else {
-                            alert("THis is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
+                            alert("This is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
                             console.warn("Field 'geomanbox' was not found in the structure")
                         }
 
-                        //$wire.call('handle_pm_create', e.layer.toGeoJSON());
                     } else {
                         console.log('Not a shape');
                     }
@@ -327,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    console.info('Snapshot successfully generated');
                                     alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
                                 } else {
                                     console.error('Error uploading map image:', data.message);
@@ -387,8 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const svgIcon = L.divIcon({
                         html: this.defaultIconMarker(markerColor),
                         className: "",
-                        iconSize: [20, 20],
-                        iconAnchor: [18, 36],
+                        iconSize: [this.config.iconSize, this.config.iconSize],
+                        //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
                     });
                     this.marker = L.marker([lat, lng], {
                         icon: svgIcon,
@@ -408,8 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Create a new icon
                         newIcon = L.icon({
                             iconUrl: base64Icon['icon'],
-                            iconSize: [26, 26],
-                            iconAnchor: [18, 36],
+                            iconSize: [this.config.iconSize, this.config.iconSize],
+                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
                         });
                     } else {
                         // Use the default icon
@@ -417,8 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         newIcon = L.divIcon({
                             html: this.defaultIconMarker(markerColor),
                             className: "",
-                            iconSize: [26, 26],
-                            iconAnchor: [18, 36],
+                            iconSize: [this.config.iconSize, this.config.iconSize],
+                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
                         });
                     }
 
@@ -435,8 +429,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('Insert icon from category')
                         newIcon = L.icon({
                             iconUrl: icon,
-                            iconSize: [26, 26],
-                            iconAnchor: [18, 36],
+                            iconSize: [this.config.iconSize, this.config.iconSize],
+                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
                         });
 
                         this.marker.setIcon(newIcon);
@@ -445,7 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
 
             defaultIconMarker: function(markerColor){
-                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="36" height="36" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             refreshMap: function() {
