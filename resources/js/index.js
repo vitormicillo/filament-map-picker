@@ -84,8 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const svgIcon = L.divIcon({
                         html: this.defaultIconMarker(markerColor),
                         className: "",
-                        iconSize: [this.config.iconSize, this.config.iconSize],
-                        //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
+                        iconSize: [config.iconSize, config.iconSize],
                     });
                     this.marker = L.marker([0,0], {
                         icon: svgIcon,
@@ -356,7 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 window.addEventListener('update-marker-icon', (event) => {
                     const icon = event.detail[0];
-                    console.log(icon);
                     this.updateMarkerIcon(icon);
                 });
             },
@@ -381,8 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const svgIcon = L.divIcon({
                         html: this.defaultIconMarker(markerColor),
                         className: "",
-                        iconSize: [this.config.iconSize, this.config.iconSize],
-                        //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
+                        iconSize: [config.iconSize, config.iconSize]
                     });
                     this.marker = L.marker([lat, lng], {
                         icon: svgIcon,
@@ -402,8 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Create a new icon
                         newIcon = L.icon({
                             iconUrl: base64Icon['icon'],
-                            iconSize: [this.config.iconSize, this.config.iconSize],
-                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
+                            iconSize: [config.iconSize, config.iconSize]
                         });
                     } else {
                         // Use the default icon
@@ -411,8 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         newIcon = L.divIcon({
                             html: this.defaultIconMarker(markerColor),
                             className: "",
-                            iconSize: [this.config.iconSize, this.config.iconSize],
-                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
+                            iconSize: [config.iconSize, config.iconSize]
                         });
                     }
 
@@ -429,8 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('Insert icon from category')
                         newIcon = L.icon({
                             iconUrl: icon,
-                            iconSize: [this.config.iconSize, this.config.iconSize],
-                            //iconAnchor: [-this.config.iconSize / 2, -this.config.iconSize / 2],
+                            iconSize: [config.iconSize, config.iconSize]
                         });
 
                         this.marker.setIcon(newIcon);

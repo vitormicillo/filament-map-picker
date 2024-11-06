@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Doode\MapPicker;
 
-use Filament\Support\Assets\Js;
-use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Asset;
-use Spatie\LaravelPackageTools\Package;
-use Filament\Support\Facades\FilamentIcon;
+use Filament\Support\Assets\Css;
+use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
-use Filament\Support\Assets\AlpineComponent;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Filament\Support\Facades\FilamentIcon;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class MapPickerServiceProvider extends PackageServiceProvider
 {
@@ -46,9 +45,7 @@ class MapPickerServiceProvider extends PackageServiceProvider
         }
     }
 
-    public function packageRegistered(): void
-    {
-    }
+    public function packageRegistered(): void {}
 
     public function packageBooted(): void
     {
