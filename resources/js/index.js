@@ -321,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
+                                    console.info('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
                                     alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
                                 } else {
                                     console.error('Error uploading map image:', data.message);
@@ -342,21 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.$wire = $wire;
                 this.config = config;
                 this.state = state;
+
                 $wire.on('refreshMap', this.refreshMap.bind(this));
 
-                window.addEventListener('capture-map-image', () => {
+                $wire.on('captureMapImage', () => {
                     this.captureAndUploadMapImage();
-                });
-
-                window.addEventListener('update-map-marker', (event)  => {
-                    const { lat, lng } = event.detail[0];
-                    this.updateMarkerPosition(lat,lng);
                 })
 
-                window.addEventListener('update-marker-icon', (event) => {
-                    const icon = event.detail[0];
+                $wire.on('updateMapLocation', (coordinates) => {
+                    console.log(coordinates);
+                    const { lat, lng, fix } = coordinates[0];
+                    this.updateMapLocation(lat,lng,fix);
+                })
+
+                $wire.on('updateMarkerIcon', (icon) => {
                     this.updateMarkerIcon(icon);
-                });
+                })
             },
 
             updateMarker: function() {
@@ -368,24 +370,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Function used for live updated after map rendered
             // and user set map position on PageResource
-            updateMarkerPosition: function(lat, lng) {
+            updateMapLocation: function(lat, lng, fix) {
                 if (this.marker) {
-                    // Update marker position and fix marker in the position
+
+                    // Fix the marker in the position selected by the user
                     this.marker.setLatLng([lat, lng]);
-                    this.map.off('move', this.moveMarkerToCenter);
-                } else {
-                    // Create the marker if it doesn't exist
-                    const markerColor = this.config.markerColor || "#3b82f6";
-                    const svgIcon = L.divIcon({
-                        html: this.defaultIconMarker(markerColor),
-                        className: "",
-                        iconSize: [config.iconSize, config.iconSize]
-                    });
-                    this.marker = L.marker([lat, lng], {
-                        icon: svgIcon,
-                        draggable: false,
-                        autoPan: true
-                    }).addTo(this.map);
+
+                    if(fix === true){
+                        console.log('marker is fixed location')
+                        this.map.off('move', this.moveMarkerToCenter);
+                    } else {
+                        console.log('marker is centered')
+                        this.map.on('move', this.moveMarkerToCenter);
+                    }
+
+
                 }
             },
 
@@ -395,10 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateMarkerIcon: function(base64Icon) {
                 if (this.marker) {
                     let newIcon;
-                    if (base64Icon['icon']) {
+                    if (base64Icon[0]['icon']) {
                         // Create a new icon
                         newIcon = L.icon({
-                            iconUrl: base64Icon['icon'],
+                            iconUrl: base64Icon[0]['icon'],
                             iconSize: [config.iconSize, config.iconSize]
                         });
                     } else {
@@ -421,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(this.marker){
                     let newIcon;
                     if(icon){
-                        console.log('Insert icon from category')
                         newIcon = L.icon({
                             iconUrl: icon,
                             iconSize: [config.iconSize, config.iconSize]
