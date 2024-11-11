@@ -170,7 +170,7 @@ Actions::make([
            $lon = $get('lon');
 
            if(!empty($lat) && !empty($lon)){
-               $livewire->dispatch('capture-map-image');
+               $livewire->dispatch('captureMapImage');
            }
        })
    ])->columnSpan(1)
@@ -378,14 +378,14 @@ You can display the icon in the list as well and use this icon to set as a marke
                         ->afterStateUpdated(function ($state, callable $set, callable $get, $livewire){
                             $model = YourModel::find($state);
                             if($model && $model->iconcolumnname) {
-                                $livewire->dispatch('update-marker-icon', ['icon' => $category->iconcolumnname]);
+                                $livewire->dispatch('updateMarkerIcon', ['icon' => $category->iconcolumnname]);
                             } else {
-                               $livewire->dispatch('update-marker-icon',['icon' => null]) ;
+                               $livewire->dispatch('updateMarkerIcon',['icon' => null]) ;
                             }
                         }),
 ```
 
-You can do it in your way, just call `$livewire` and pass the parameter `'update-marker-icon'`
+You can do it in your way, just call `$livewire` and pass the parameter `'updateMarkerIcon'`
 
 
 
