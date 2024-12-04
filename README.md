@@ -23,6 +23,20 @@ geo-coordinates with the ease of having the Geoman plugin embedded in the map.
   * [`.gitignore`][link-gitignore]
   * [`pint.json`][link-pint]
 
+
+## GeoMan Integration
+
+This package now includes integration with GeoMan, a powerful tool for creating and editing geometries on maps. GeoMan allows users to draw various shapes, edit existing geometries, and perform advanced map editing tasks.
+
+### GeoMan Features:
+
+- Draw markers, polygons, polylines, and circles
+- Edit existing geometries
+- Cut polygons
+- Rotate shapes
+- Drag mode for easy shape manipulation
+- Delete layers
+
 ## Supported Maps
 
 Map Picker currently supports the following map:
@@ -37,16 +51,13 @@ You can easily install the package via Composer:
 ```bash
 composer require doode/filament-map-picker
 ```
-
-## Basic Usage
-
+## `Basic` Usage
 Resource file:
 
 ```php
 <?php
 namespace App\Filament\Resources;
-use Filament\Resources\Resource;
-use Filament\Resources\Forms\Form;
+
 use Doode\MapPicker\Fields\Map;
 ...
 
@@ -60,126 +71,97 @@ class FilamentResource extends Resource
                 ->label('Location')
                 ->columnSpanFull()
                 ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
-                ->afterStateUpdated(function (Set $set, ?array $state): void {
+                ->afterStateUpdated(function (callable $set, ?array $state): void {
                     $set('latitude', $state['lat']);
                     $set('longitude', $state['lng']);
                 })
-                ->afterStateHydrated(function ($state, $record, Set $set): void {
+                ->afterStateHydrated(function ($state, $record, callable $set): void {
                     $set('location', ['lat' => $record->latitude, 'lng' => $record->longitude]);
                 })
                 ->extraStyles([
-                    'min-height: 150vh',
-                    'border-radius: 50px'
+                    'min-height: 100vh',
+                    'border-radius: 10px'
                 ])
-                ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
+                ->liveLocation(true, true, 5000)
                 ->showMarker()
-                ->iconSize(32)
-                ->showGeomanToolbar() // Display or not the geoman tools bar
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
                 ->showZoomControl()
                 ->draggable()
                 ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-                ->zoom(15)
+                ->zoom(13)
                 ->detectRetina()
                 ->showMyLocationButton()
-                ->extraTileControl([])
-                ->extraControl([
-                    'zoomDelta'           => 1,
-                    'zoomSnap'            => 2,
-                ])
-           ]);
+                ->geoManToolbar(true)
+                ->geoManEditable(true)
+                ->geoManPosition('topleft')
+                ->drawCircleMarker()
+                ->rotateMode()
+                ->clickable() //click to move marker
+                ->drawText() //disabled by default
+                ->drawMarker()
+                ->drawPolygon()
+                ->drawPolyline()
+                ->drawCircle()
+                ->dragMode()
+                ->cutPolygon()
+                ->editPolygon()
+                ->deleteLayer()
+                ->setColor('#3388ff')
+                ->setFilledColor('#cad9ec')
+           ]),
+           
+           // Field to store the geojson data
+           Hidden::make('geomanbox')
     }
     ...
 }
 ```
 
-Other option you can use to test Geoman shapes is:
+### `clickable` Option
+
+This will allow you to set the point on the map with a click. Default behaviour has the marker centered as the map is
+dragged underneath. You could, with this, keep the map still and lock the zoom and choose to click to place the marker.
+
 ```php
-<?php
-namespace App\Filament\Resources;
-use Filament\Resources\Resource;
-use Filament\Resources\Forms\Form;
-use Doode\MapPicker\Fields\Map;
-...
-
-class FilamentResource extends Resource
-{
-    ...
-    public static function form(Form $form)
-    {
-        return $form->schema([
-            Map::make('location')
-                ->label('Location')
-                ->columnSpanFull()
-                ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
-                ->afterStateUpdated(function (Set $set, ?array $state): void {
-                    if ($state) {
-                        $set('coordinates', json_encode($state));
-                    }
-                })
-                ->afterStateHydrated(function ($state, $record, Set $set): void {
-                    $set('coordinates', $record?->geom);
-                })
-                ->extraStyles([
-                    'min-height: 50vh',
-                    'border-radius: 50px'
-                ])
-                ->liveLocation(true, true, 10000) // Updates live location every 10 seconds
-                ->showMarker() //true or false
-                ->iconSize(32) //integer value
-                ->showGeomanToolbar() //true or false
-                ->markerColor("#22c55eff")
-                ->showFullscreenControl() //true or false
-                ->showZoomControl() //true or false
-                ->draggable() //true or false
-                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-                ->zoom(10)
-                ->detectRetina()
-                ->showMyLocationButton()
-                ->extraTileControl([])
-                ->extraControl([
-                    'zoomDelta'           => 1,
-                    'zoomSnap'            => 2,
-                ]),
-           
-            Textarea::make('coordinates')->columnSpanFull()     
-                
-           ]);
-           
-           
-    }
-    ...
-}
+Map::make('location')
+    ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
+    ->showMarker(true)
+    ->clickable(true)
+    ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+    ->zoom(12)
 ```
-## New feature to capture image from the map
-![img_1.png](img_1.png)
 
-This is an example of the code in how to trigger the function in the map in order to capture the snapshot.
-Note: Latitude and longitude are not mandatory, you can move the map and trigger the action to capture the image.
+### `rangeSelectField` Option
 
-“If you have Geoman shapes drawn on your map, they will be included in the generated image.”
+The rangeSelectField Option allows you to specify another field on your form which specifies a range from the point
+identified by the marker.  That field must be in meters. So for example you could do this:
+
 ```php
-Actions::make([
-   Action::make('capture_map_image')
-       ->hiddenLabel()
-       ->icon('heroicon-m-camera')
-       ->color('info')
-       ->action(function (callable $get, callable $set, $livewire) {
-           $lat = $get('lat');
-           $lon = $get('lon');
+Fieldset::make('Location')
+    ->schema([
+        Select::make('membership_distance')
+            ->enum(MembershipDistance::class)
+            ->options(MembershipDistance::class)
+            ->required(),
 
-           if(!empty($lat) && !empty($lon)){
-               $livewire->dispatch('captureMapImage');
-           }
-       })
-   ])->columnSpan(1)
+        Map::make('location')
+            ->defaultLocation(latitude: 40.4168, longitude: -3.7038)
+            ->showMarker(true)
+            ->showFullscreenControl(false)
+            ->showZoomControl()
+            ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+            ->zoom(12)
+            ->detectRetina()
+            ->rangeSelectField('membership_distance')
+            ->setFilledColor('#cad9ec'),
+    ])
+    ->columns(1),
 ```
-In your web.php file is necessary to add the route, i.e you can use a custom Controller
-The map feature will post the blob image to this url /upload-map-image
-```php
-Route::post('/upload-map-image', [MapController::class, 'uploadMapImage'])->name('upload.map.image');
-```
+
+In this case, as you change the value on the Select a circle of that radius centered on the marker will
+change to match your drop down.
+
 
 #### `liveLocation` Option
 
@@ -195,12 +177,103 @@ Example:
 Map::make('location')
     ->liveLocation(true, true, 10000)  // Updates live location every 10 seconds
     ->showMarker()
-    ->iconSize(32)
-    ->showGeomanToolbar()
     ->draggable()
 ```
 
-If you wish to update the map location and marker either through an action or after altering other input values, you can trigger a refresh of the map using the following approach:
+### boundaries Option
+
+The idea here is that you can set a boundary box by defining two points, the southwest most point and the north east
+most point, and your map will pan back into the panned area if you drag away, such that the points can only be selected
+if you stay in the map.
+
+You will want to set the minZoom() along with this if you set showZoomControl(true). To choose a good value for minZoom()
+you will need to consider both the size of the map on the screen and the size of the bounding boxm, and you may find trial and
+error is the best method.
+
+```php
+Map::make('location')
+    ->showMarker()
+    ->boundaries(true,49,11.1,61.0,2.1)
+    ->draggable()
+```
+
+To turn it off again - possibly a strange use case - `boundaries(false)` is what you want.
+
+### setBoundsToBritishIsles Option
+This is a convenience function that uses the boundaries option above, setting the boundary box to
+(49.5,-11) and (61,2)
+
+
+## Options Table
+
+Here's a table describing all available options and their default values:
+
+| Option                  | Description                  | Default Value                                   |
+|-------------------------|------------------------------|-------------------------------------------------|
+| draggable               | Allow map dragging           | true                                            |
+| showMarker              | Display marker on the map    | true                                            |
+| tilesUrl                | URL for map tiles            | 'http://tile.openstreetmap.org/{z}/{x}/{y}.png' |
+| attribution             | Map attribution text         | null                                            |
+| zoomOffset              | Zoom offset                  | -1                                              |
+| tileSize                | Tile size                    | 512                                             |
+| detectRetina            | Detect and use retina tiles  | true                                            |
+| minZoom                 | Minimum zoom level           | 0                                               |
+| maxZoom                 | Maximum zoom level           | 28                                              |
+| zoom                    | Default zoom level           | 15                                              |
+| markerColor             | Color of the marker          | '#3b82f6'                                       |
+| liveLocation            | Enable live location updates | [false, false, 5000]                            |
+| showMyLocationButton    | Show "My Location" button    | false                                           |
+| default                 | Default location             | ['lat' => 0, 'lng' => 0]                        |
+| geoManToolbox.show      | Enable GeoMan                | false                                           |
+| geoMan.editable         | Allow editing with GeoMan    | true                                            |
+| geoMan.position         | Position of GeoMan controls  | 'topleft'                                       |
+| geoMan.drawCircleMarker | Allow drawing circle markers | true                                            |
+| geoMan.rotateMode       | Enable rotate mode           | true                                            |
+| geoMan.drawText         | Allow drawing text blocks    | false                                           |
+| geoMan.drawMarker       | Allow drawing markers        | true                                            |
+| geoMan.drawPolygon      | Allow drawing polygons       | true                                            |
+| geoMan.drawPolyline     | Allow drawing polylines      | true                                            |
+| geoMan.drawCircle       | Allow drawing circles        | true                                            |
+| geoMan.dragMode         | Enable drag mode             | true                                            |
+| geoMan.cutPolygon       | Allow cutting polygons       | true                                            |
+| geoMan.editPolygon      | Allow editing polygons       | true                                            |
+| geoMan.deleteLayer      | Allow deleting layers        | true                                            |
+| geoMan.color            | Stroke color for drawings    | '#3388ff'                                       |
+| geoMan.filledColor      | Fill color for drawings      | '#cad9ec'                                       |
+
+
+# New feature to capture image from the map
+![img_1.png](img_1.png)
+
+This is an example of the code in how to trigger the function in the map in order to capture the snapshot.
+Note: Latitude and longitude are not mandatory, you can move the map and trigger the action to capture the image.
+
+“If you have Geoman shapes drawn on your map, they will be included in the generated image.”
+```php
+Actions::make([
+   Action::make('capture_map_image')
+       ->hiddenLabel()
+       ->icon('heroicon-m-camera')
+       ->color('info')
+       ->action(function (callable $get, $livewire) {
+           $lat = $get('lat');
+           $lon = $get('lon');
+
+           if(!empty($lat) && !empty($lon)){
+               $livewire->dispatch('captureMapImage');
+           }
+       })
+   ])->columnSpan(1)
+```
+In your web.php file is necessary to add the route, i.e you can use a custom Controller
+The map feature will post the blob image to this url /upload-map-image
+```php
+Route::post('/upload-map-image', [MapController::class, 'uploadMapImage'])->name('upload.map.image');
+```
+
+
+If you wish to update the map location and marker either through an action or after altering other input values, 
+you can trigger a refresh of the map using the following approach:
 
 ```php
 
@@ -327,6 +400,7 @@ Example in how to use custom SVG Icon when "edit" a record from database
                        ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
                        ->afterStateHydrated(function (callable $set, callable $get, $state, ?Model $record) {
                            if ($record) {
+                               // Icon base64_encoded value
                                $icon = YourModel::find($record->databasefield)->base64_image;
 
                                $set('location', [

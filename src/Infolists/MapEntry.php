@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Doode\MapPicker\Infolists;
 
-use Closure;
 use Doode\MapPicker\Contracts\MapOptions;
 use Filament\Infolists\Components\Entry;
 
@@ -22,15 +21,14 @@ class MapEntry extends Entry implements MapOptions
         'statePath' => '',
         'draggable' => true,
         'showMarker' => true,
-        'showGeomanToolbar' => true,
         'tilesUrl' => 'http://tile.openstreetmap.org/{z}/{x}/{y}.png',
         'attribution' => null,
         'zoomOffset' => -1,
         'tileSize' => 512,
         'detectRetina' => true,
-        'minZoom' => 0,
+        'minZoom' => 1,
         'maxZoom' => 28,
-        'zoom' => 15,
+        'zoom' => 10,
         'markerColor' => '#3b82f6',
         'iconSize' => 32,
         'liveLocation' => [false, false, 5000],
@@ -48,7 +46,7 @@ class MapEntry extends Entry implements MapOptions
         'touchZoom' => 'center',
         'minZoom' => 1,
         'maxZoom' => 28,
-        'zoom' => 15,
+        'zoom' => 10,
         'fullscreenControl' => true,
     ];
 
@@ -94,10 +92,10 @@ class MapEntry extends Entry implements MapOptions
         return $this;
     }
 
-    public function defaultLocation(Closure|array $location): self
+    public function defaultLocation(int|float $latitude, float|int $longitude): self
     {
-        $this->mapConfig['default']['lat'] = $location['lat'];
-        $this->mapConfig['default']['lng'] = $location['lng'];
+        $this->mapConfig['default']['lat'] = $latitude;
+        $this->mapConfig['default']['lng'] = $longitude;
 
         return $this;
     }
@@ -165,13 +163,6 @@ class MapEntry extends Entry implements MapOptions
     public function showMarker(bool $show = true): self
     {
         $this->mapConfig['showMarker'] = $show;
-
-        return $this;
-    }
-
-    public function showGeomanToolbar(bool $show = true): self
-    {
-        $this->mapConfig['showGeomanToolbar'] = $show;
 
         return $this;
     }
@@ -294,6 +285,255 @@ class MapEntry extends Entry implements MapOptions
     public function extraTileControl(array $control): self
     {
         $this->mapConfig = array_merge($this->mapConfig, $control);
+
+        return $this;
+    }
+
+    /**
+     * Determines if the user can click to place the marker on the map.
+     *
+     * @return $this
+     */
+    public function clickable(bool $clickable): self
+    {
+        $this->mapConfig['clickable'] = $clickable;
+
+        return $this;
+    }
+
+    /**
+     * Prevents the map from panning outside the defined box, and sets
+     * a default location in the center of the box.
+     */
+    public function boundaries(bool $on, int|float $southWestLat = 0, int|float $southWestLng = 0, int|float $northEastLat = 0, int|float $northEastLng = 0): self
+    {
+        if (!$on) {
+            $this->mapConfig['boundaries'] = false;
+
+            return $this;
+        }
+
+        $this->mapConfig['bounds']['sw'] = ['lat' => $southWestLat, 'lng' => $southWestLng];
+        $this->mapConfig['bounds']['ne'] = ['lat' => $northEastLat, 'lng' => $northEastLng];
+        $this->defaultLocation(($southWestLat + $northEastLat) / 2.0, ($southWestLng + $northEastLng) / 2.0);
+
+        return $this;
+    }
+
+    /**
+     * Convenience function for appropriate values for boundaries() when
+     * you want the British Isles
+     **/
+    public function setBoundsToBritishIsles(): self
+    {
+        $this->boundaries(true, 49.5, -11, 61, 2);
+
+        return $this;
+    }
+
+    /**
+     * Use the value of another field on the form for the range of the
+     * circle surrounding the marker
+     *
+     * @return $this
+     **/
+    public function rangeSelectField(string $rangeSelectField): self
+    {
+        $this->mapConfig['rangeSelectField'] = $rangeSelectField;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable GeoMan functionality.
+     *
+     * @return $this
+     */
+    public function geoManToolbar(bool $show = true): self
+    {
+        $this->mapConfig['geoManToolbar']['show'] = $show;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable GeoMan edit mode.
+     *
+     * @return $this
+     */
+    public function geoManEditable(bool $show = true): self
+    {
+        $this->mapConfig['geoManToolbar']['editable'] = $show;
+
+        return $this;
+    }
+
+    /**
+     * Set GeoMan control position.
+     *
+     * @return $this
+     *
+     * @note Valid values: 'topleft', 'topright', 'bottomleft', 'bottomright'
+     */
+    public function geoManPosition(string $position = 'topleft'): self
+    {
+        $this->mapConfig['geoManToolbar']['position'] = $position;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of circle markers.
+     *
+     * @return $this
+     */
+    public function drawCircleMarker(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawCircleMarker'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable rotate mode.
+     *
+     * @return $this
+     */
+    public function rotateMode(bool $rotate = true): self
+    {
+        $this->mapConfig['geoManToolbar']['rotateMode'] = $rotate;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of markers.
+     *
+     * @return $this
+     */
+    public function drawMarker(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawMarker'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of polygons.
+     *
+     * @return $this
+     */
+    public function drawPolygon(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawPolygon'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of polylines.
+     *
+     * @return $this
+     */
+    public function drawPolyline(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawPolyline'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of circles.
+     *
+     * @return $this
+     */
+    public function drawCircle(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawCircle'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drawing of texts.
+     *
+     * @return $this
+     */
+    public function drawText(bool $draw = true): self
+    {
+        $this->mapConfig['geoManToolbar']['drawText'] = $draw;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable editing of polygons.
+     *
+     * @return $this
+     */
+    public function editPolygon(bool $edit = true): self
+    {
+        $this->mapConfig['geoManToolbar']['editPolygon'] = $edit;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable deletion of layers.
+     *
+     * @return $this
+     */
+    public function deleteLayer(bool $delete = true): self
+    {
+        $this->mapConfig['geoManToolbar']['deleteLayer'] = $delete;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable drag mode.
+     *
+     * @return $this
+     */
+    public function dragMode(bool $enable = true): self
+    {
+        $this->mapConfig['geoManToolbar']['dragMode'] = $enable;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable polygon cutting.
+     *
+     * @return $this
+     */
+    public function cutPolygon(bool $enable = true): self
+    {
+        $this->mapConfig['geoManToolbar']['cutPolygon'] = $enable;
+
+        return $this;
+    }
+
+    /**
+     * Set the stroke color for drawings.
+     *
+     * @return $this
+     */
+    public function setColor(string $color): self
+    {
+        $this->mapConfig['geoManToolbar']['color'] = $color;
+
+        return $this;
+    }
+
+    /**
+     * Set the fill color for drawings.
+     *
+     * @return $this
+     */
+    public function setFilledColor(string $filledColor): self
+    {
+        $this->mapConfig['geoManToolbar']['filledColor'] = $filledColor;
 
         return $this;
     }
