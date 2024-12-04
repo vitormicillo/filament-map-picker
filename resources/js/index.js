@@ -1,7 +1,10 @@
-import * as L from 'leaflet'
+import * as LF from 'leaflet'
 import 'leaflet-fullscreen'
 import '@geoman-io/leaflet-geoman-free'
 import domtoimage from 'dom-to-image';
+import {
+    zoom
+} from 'leaflet/src/control/Control.Zoom.js'
 
 document.addEventListener('DOMContentLoaded', () => {
     window.mapPicker = ($wire, config, state) => {
@@ -9,7 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
             map: null,
             tile: null,
             marker: null,
+            rangeCircle: null,
+            drawItems: null,
+            rangeSelectField: null,
+            markerShouldMoveWithMap: false,
 
+            // Necessary to validate GEOJSON data
             isVariableValid: function(value) {
                 if (typeof value === 'undefined' || value === null) {
                     return false;
@@ -36,9 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             createMap: function(el) {
                 const that = this;
-                const geoJsonBox = document.getElementById('geomanbox');
 
-                this.map = L.map(el, config.controls);
+                const geoJsonBox = document.getElementById('geomanbox');
+                const zoomLevel = config.controls.zoom || config.zoom() || 15;
+
+                this.map = LF.map(el, config.controls);
+
+                if(config.bounds)
+                {
+                    let southWest = LF.latLng(config.bounds.sw.lat, config.bounds.sw.lng);
+                    let northEast = LF.latLng(config.bounds.ne.lat, config.bounds.ne.lng);
+                    let bounds = LF.latLngBounds(southWest, northEast);
+                    this.map.setMaxBounds(bounds);
+                    this.map.fitBounds(bounds);
+                    this.map.on('drag', function() {
+                        map.panInsideBounds(bounds, { animate: false });
+                    });
+                }
+
                 this.map.on('load', () => {
                     setTimeout(() => this.map.invalidateSize(true), 0);
                     if (config.showMarker) {
@@ -50,58 +73,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.map.dragging.disable();
                 }
 
-                this.tile = L.tileLayer(config.tilesUrl, {
+                if(config.clickable)
+                {
+                    this.map.on('click', function(e) {
+                        that.setCoordinates(e.latlng);
+                    });
+                }
+
+                this.tile = LF.tileLayer(config.tilesUrl, {
                     attribution: config.attribution,
                     minZoom: config.minZoom,
                     maxZoom: config.maxZoom,
                     tileSize: config.tileSize,
                     zoomOffset: config.zoomOffset,
-                    detectRetina: config.detectRetina,
-                    fullscreen: config.fullscreenControl
+                    detectRetina: config.detectRetina
                 }).addTo(this.map);
 
-                // Geoman Toolbar Controls, hide or enable it from filament resource
-                if (config.showGeomanToolbar) {
-                    this.map.pm.addControls({
-                        position: 'topright',
-                        drawPolygon: true,
-                        drawRectangle: true,
-                        editMode: true,
-                        drawMarker: false,
-                        drawCircle: false,
-                        drawText: false,
-                        drawPolyline: false,
-                        deleteMode: false,
-                        drawCircleMarker: false,
-                        rotateMode: false,
-                    });
-                }
-
-                let drawItems = new L.FeatureGroup().addTo(this.map);
+                let drawItems = new LF.FeatureGroup().addTo(this.map);
+                let location = state ?? this.getCoordinates();
 
                 if (config.showMarker) {
                     const markerColor = config.markerColor || "#3b82f6";
-                    const svgIcon = L.divIcon({
+                    const svgIcon = LF.divIcon({
                         html: this.defaultIconMarker(markerColor),
                         className: "",
                         iconSize: [config.iconSize, config.iconSize],
                     });
-                    this.marker = L.marker([0,0], {
+
+                    // Initialize the marker at the stored coordinates or 0,0 if not available
+                    let markerPosition = [location.lat || 0, location.lng || 0];
+
+                    this.marker = LF.marker(markerPosition, {
                         icon: svgIcon,
                         draggable: false,
                         autoPan: true
                     }).addTo(this.map);
-                    this.moveMarkerToCenter = () => this.marker.setLatLng(this.map.getCenter());
+
+                    this.setMarkerRange();
+
+                    // Define moveMarkerToCenter function
+                    this.moveMarkerToCenter = () => {
+                        if(this.markerShouldMoveWithMap){
+                            this.marker.setLatLng(this.map.getCenter());
+                        }
+                    };
+
+                    // Always attach the move event listener
                     this.map.on('move', this.moveMarkerToCenter);
+
+                    // Set the initial value of markerShouldMoveWithMap
+                    this.markerShouldMoveWithMap = (!location.lat && !location.lng) && !config.clickable;
+
+                    // if(!config.clickable){
+                    //     this.map.on('move', () => this.setCoordinates(this.map.getCenter()));
+                    // }
                 }
 
                 this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
 
                 this.map.on('locationfound', function() {
-                    that.map.setZoom(config.controls.zoom);
+                    that.map.setZoom(config.control.zoom);
                 });
 
-                let location = state ?? this.getCoordinates();
                 if (!location.lat && !location.lng) {
                     this.map.locate({
                         setView: true,
@@ -110,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         watch: false
                     });
                 } else {
-                    this.map.setView(new L.LatLng(location.lat, location.lng));
+                    this.map.setView(new LF.LatLng(location.lat, location.lng), zoomLevel);
                 }
 
                 if (config.showMyLocationButton) {
@@ -123,29 +156,77 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, config.liveLocation.milliseconds);
                 }
 
-                if (geoJsonBox) {
-                    console.log('geomandb field exists in DOM');
-                    if (this.isVariableValid(geoJsonBox.value)) {
-                        const geomData = JSON.parse(geoJsonBox.value);
-                        // center map with coordinates
-                        const getBounds = this.map.fitBounds(L.geoJSON(geomData).getBounds());
-                        const position = getBounds.getCenter();
-                        this.map.setView(position, 8);
-                        drawItems = new L.geoJSON(geomData, {
-                            style: {
-                                color: config.liveLocation.color || "#FFFFFF",
-                                fillColor: 'blue',
-                                fillOpacity: 0.5,
-                            }
-                        });
-                        this.map.addLayer(drawItems);
-                        this.map.fitBounds(drawItems.getBounds());
-                        this.map.setZoom(8);
+                // Geoman Toolbar Controls, hide or enable it from filament resource
+                if (config.geoManToolbar.show) {
+                    this.map.pm.addControls({
+                        position: config.geoManToolbar.position,
+                        rotateMode: config.geoManToolbar.rotateMode,
+                        drawCircleMarker: config.geoManToolbar.drawCircleMarker,
+                        drawMarker: config.geoManToolbar.drawMarker,
+                        drawPolygon: config.geoManToolbar.drawPolygon,
+                        drawPolyline: config.geoManToolbar.drawPolyline,
+                        drawCircle: config.geoManToolbar.drawCircle,
+                        drawText: config.geoManToolbar.drawText,
+                        editMode: config.geoManToolbar.editMode,
+                        dragMode: config.geoManToolbar.dragMode,
+                        cutPolygon: config.geoManToolbar.cutPolygon,
+                        editPolygon: config.geoManToolbar.editPolygon,
+                        deleteLayer: config.geoManToolbar.deleteLayer
+                    });
 
+                    // If GeoJsonBox is available load all necessary
+                    if (geoJsonBox) {
+                        console.info('geomanbox field exists in DOM');
+
+                        if (this.isVariableValid(geoJsonBox.value)) {
+                            const geomData = JSON.parse(geoJsonBox.value);
+
+                            // Create the GeoJSON layer and add it to the map
+                            drawItems = LF.geoJSON(geomData, {
+                                style: {
+                                    color: config.liveLocation?.color || "#FFFFFF",
+                                    fillColor: 'blue',
+                                    fillOpacity: 0.5,
+                                }
+                            }).addTo(this.map);
+
+                            // Get the bounds of the GeoJSON layer
+                            const geojsonBounds = drawItems.getBounds();
+
+                            // Check if bounds are valid
+                            if (geojsonBounds.isValid()) {
+                                // Fit the map view to the bounds of the GeoJSON layer
+                                this.map.fitBounds(geojsonBounds, {
+                                    maxZoom: zoomLevel, // Use zoomLevel as the maximum zoom level
+                                    padding: [20, 20],  // Optional padding around the features
+                                });
+                            } else {
+                                // Handle single point or invalid bounds
+                                let coordinates;
+
+                                if (geomData.type === 'FeatureCollection' && geomData.features.length > 0) {
+                                    coordinates = geomData.features[0].geometry.coordinates;
+                                } else if (geomData.type === 'Feature') {
+                                    coordinates = geomData.geometry.coordinates;
+                                } else if (geomData.type === 'Point') {
+                                    coordinates = geomData.coordinates;
+                                } else {
+                                    console.error('Unsupported GeoJSON type or empty features');
+                                    // Set to default location if unable to get coordinates
+                                    coordinates = [config.default.lng, config.default.lat];
+                                }
+
+                                // Center the map on the coordinates
+                                this.map.setView([coordinates[1], coordinates[0]], zoomLevel);
+                            }
+
+                        } else {
+                            console.info("No Data to Edit");
+                            // Set the map view to a default position and zoom
+                            this.map.setView([config.default.lat, config.default.lng], zoomLevel);
+                        }
                     } else {
-                        console.info("No Data to Edit");
-                        this.map.addLayer(drawItems);
-                        this.map.setZoom(10);
+                        console.warn("geomanbox field is not available");
                     }
                 }
 
@@ -210,10 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.fetchInitialCategoryIcon(coordinates.icon);
                 }
 
-                if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
-                    $wire.set(config.statePath, this.map.getCenter(), false);
-                    if (config.liveLocation.send) {
-                        $wire.$refresh();
+                if (this.markerShouldMoveWithMap) {
+                    // Only update location if the marker moves with the map center
+                    if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
+                        $wire.set(config.statePath, currentCenter, false);
+                        if (config.liveLocation.send) {
+                            $wire.$refresh();
+                        }
                     }
                 }
             },
@@ -246,6 +330,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return location;
             },
 
+            setCoordinates: function (coords) {
+                $wire.set(config.statePath, {
+                    ...$wire.get(config.statePath),
+                    lat: coords.lat,
+                    lng: coords.lng
+                }, false);
+
+                if (config.liveLocation.send) {
+                    $wire.$refresh();
+                }
+
+                // Update the marker position
+                this.marker.setLatLng(coords);
+
+                // Since the user explicitly set the coordinates, we may want to fix the marker
+                this.markerShouldMoveWithMap = false;
+
+                this.updateMarker();
+                return coords;
+            },
+
             attach: function(el) {
                 this.createMap(el);
                 const observer = new IntersectionObserver(entries => {
@@ -268,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchCurrentLocation: function() {
                 if ('geolocation' in navigator) {
                     navigator.geolocation.getCurrentPosition(async position => {
-                        const currentPosition = new L.LatLng(position.coords.latitude, position.coords.longitude);
+                        const currentPosition = new LF.LatLng(position.coords.latitude, position.coords.longitude);
                         await this.map.flyTo(currentPosition);
                         this.updateLocation();
                         this.updateMarker();
@@ -289,6 +394,117 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.map.getContainer().appendChild(locationButton);
             },
 
+            setMarkerRange: function () {
+                if(!this.rangeSelectField)
+                    return ;
+                distance=parseInt(this.rangeSelectField.value || 0 ) ;
+                if (this.rangeCircle) {
+                    this.rangeCircle.setLatLng(this.getCoordinates()).setRadius(distance);
+                } else {
+                    this.rangeCircle = LF.circle(this.getCoordinates(), {
+                        color: 'blue',
+                        fillColor: '#f03',
+                        fillOpacity: 0.5,
+                        radius: distance // The radius in meters
+                    }).addTo(this.map);
+                }
+            },
+
+            init: function() {
+                this.$wire = $wire;
+                this.config = config;
+                this.state = state;
+                this.rangeSelectField = document.getElementById(config.rangeSelectField || 'data.distance');
+                // let that=this
+                // if(this.rangeSelectField){
+                //     this.rangeSelectField.addEventListener('change', function () {that.updateMarker(); });
+                // }
+
+                $wire.on('refreshMap', this.refreshMap.bind(this));
+
+                $wire.on('captureMapImage', () => {
+                    this.captureAndUploadMapImage();
+                })
+
+                $wire.on('updateMapLocation', (coordinates) => {
+                    const { lat, lng, fix } = coordinates[0];
+                    this.updateMapLocation(lat,lng,fix);
+                })
+
+                $wire.on('updateMarkerIcon', (icon) => {
+                    this.updateMarkerIcon(icon);
+                })
+            },
+
+            updateMarker: function() {
+                if (config.showMarker) {
+                    this.marker.setLatLng(this.getCoordinates());
+                    this.setMarkerRange();
+                    setTimeout(() => this.updateLocation(), 500);
+                }
+            },
+
+            // Function used for live updated after map rendered
+            // and user set map position on PageResource
+            updateMapLocation: function(lat, lng, fix) {
+                if (this.marker) {
+                    // Set marker to the new coordinates
+                    this.marker.setLatLng([lat, lng]);
+
+                    // Update the markerShouldMoveWithMap flag
+                    this.markerShouldMoveWithMap = !fix;
+                    console.log('markerShouldMoveWithMap is now', this.markerShouldMoveWithMap);
+                }
+            },
+
+            // Function used for live update icon based on
+            // category selected in Filament Resource
+            // To use this is necessary encode image with base64
+            updateMarkerIcon: function(base64Icon) {
+                if (this.marker) {
+                    let newIcon;
+                    if (base64Icon[0]['icon']) {
+                        // Create a new icon
+                        newIcon = LF.icon({
+                            iconUrl: base64Icon[0]['icon'],
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+                    } else {
+                        // Use the default icon
+                        const markerColor = this.config.markerColor || "#3b82f6";
+                        newIcon = LF.divIcon({
+                            html: this.defaultIconMarker(markerColor),
+                            className: "",
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+                    }
+
+                    this.marker.setIcon(newIcon);
+                }
+            },
+
+            // Editing a record, if user select a different marker
+            // this function updated maps using the icon url
+            fetchInitialCategoryIcon: function(icon) {
+                if(this.marker){
+                    let newIcon;
+                    if(icon){
+                        newIcon = LF.icon({
+                            iconUrl: icon,
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+
+                        this.marker.setIcon(newIcon);
+                    }
+                }
+            },
+
+            defaultIconMarker: function(markerColor){
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
+            },
+
+            // Function to generate a map snapshot and submit the file to the laravel route
+            // 'admin/upload-map-image' via POST method
             captureAndUploadMapImage: function(){
                 const mapContainer = this.map.getContainer();
 
@@ -337,101 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Error capturing map image:', error);
                         alert('Error capturing map image:'+ error);
                     });
-            },
-
-            init: function() {
-                this.$wire = $wire;
-                this.config = config;
-                this.state = state;
-
-                $wire.on('refreshMap', this.refreshMap.bind(this));
-
-                $wire.on('captureMapImage', () => {
-                    this.captureAndUploadMapImage();
-                })
-
-                $wire.on('updateMapLocation', (coordinates) => {
-                    console.log(coordinates);
-                    const { lat, lng, fix } = coordinates[0];
-                    this.updateMapLocation(lat,lng,fix);
-                })
-
-                $wire.on('updateMarkerIcon', (icon) => {
-                    this.updateMarkerIcon(icon);
-                })
-            },
-
-            updateMarker: function() {
-                if (config.showMarker) {
-                    this.marker.setLatLng(this.getCoordinates());
-                    setTimeout(() => this.updateLocation(), 500);
-                }
-            },
-
-            // Function used for live updated after map rendered
-            // and user set map position on PageResource
-            updateMapLocation: function(lat, lng, fix) {
-                if (this.marker) {
-
-                    // Fix the marker in the position selected by the user
-                    this.marker.setLatLng([lat, lng]);
-
-                    if(fix === true){
-                        console.log('marker is fixed location')
-                        this.map.off('move', this.moveMarkerToCenter);
-                    } else {
-                        console.log('marker is centered')
-                        this.map.on('move', this.moveMarkerToCenter);
-                    }
-
-
-                }
-            },
-
-            // Function used for live update icon based on
-            // category selected in Filament Resource
-            // To use this is necessary encode image with base64
-            updateMarkerIcon: function(base64Icon) {
-                if (this.marker) {
-                    let newIcon;
-                    if (base64Icon[0]['icon']) {
-                        // Create a new icon
-                        newIcon = L.icon({
-                            iconUrl: base64Icon[0]['icon'],
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-                    } else {
-                        // Use the default icon
-                        const markerColor = this.config.markerColor || "#3b82f6";
-                        newIcon = L.divIcon({
-                            html: this.defaultIconMarker(markerColor),
-                            className: "",
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-                    }
-
-                    this.marker.setIcon(newIcon);
-                }
-            },
-
-            // Editing a record, if user select a different marker
-            // this function updated maps using the icon url
-            fetchInitialCategoryIcon: function(icon) {
-                if(this.marker){
-                    let newIcon;
-                    if(icon){
-                        newIcon = L.icon({
-                            iconUrl: icon,
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-
-                        this.marker.setIcon(newIcon);
-                    }
-                }
-            },
-
-            defaultIconMarker: function(markerColor){
-                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             refreshMap: function() {
