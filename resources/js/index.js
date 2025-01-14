@@ -1,10 +1,8 @@
 import * as LF from 'leaflet'
 import 'leaflet-fullscreen'
 import '@geoman-io/leaflet-geoman-free'
-import domtoimage from 'dom-to-image';
-import {
-    zoom
-} from 'leaflet/src/control/Control.Zoom.js'
+import { toBlob } from 'html-to-image';
+import {zoom} from 'leaflet/src/control/Control.Zoom.js'
 
 document.addEventListener('DOMContentLoaded', () => {
     window.mapPicker = ($wire, config, state) => {
@@ -86,7 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     maxZoom: config.maxZoom,
                     tileSize: config.tileSize,
                     zoomOffset: config.zoomOffset,
-                    detectRetina: config.detectRetina
+                    detectRetina: config.detectRetina,
+                    crossOrigin: true
                 }).addTo(this.map);
 
                 let drawItems = new LF.FeatureGroup().addTo(this.map);
@@ -124,9 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Set the initial value of markerShouldMoveWithMap
                     this.markerShouldMoveWithMap = (!location.lat && !location.lng) && !config.clickable;
 
-                    // if(!config.clickable){
-                    //     this.map.on('move', () => this.setCoordinates(this.map.getCenter()));
-                    // }
                 }
 
                 this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
@@ -508,19 +504,22 @@ document.addEventListener('DOMContentLoaded', () => {
             captureAndUploadMapImage: function(){
                 const mapContainer = this.map.getContainer();
 
-                // Hide controls before generating image
-                const controlElements = mapContainer.querySelectorAll('.leaflet-control-container, .leaflet-top, .leaflet-bottom');
-                controlElements.forEach(element => {
-                    element.style.display = 'none';
-                });
+                toBlob(mapContainer, {
+                    // Hide controls before generating image
+                    filter: (element) => {
+                            if (element.classList && element.classList.contains('leaflet-control-container')){
+                                return false;
+                            }
+                            return true;
+                        },
+                        // Optionally specify width/height:
+                        width: mapContainer.offsetWidth,
+                        height: mapContainer.offsetHeight
+                    }).then((blob) => {
 
-                domtoimage.toBlob(mapContainer, null)
-                    .then((blob) => {
-
-                        // Restore controls after capturing the image
-                        controlElements.forEach(element => {
-                            element.style.display = '';
-                        });
+                        if(!blob || !(blob instanceof Blob)){
+                            throw new Error('domtoimage did not return a valid blob object');
+                        }
 
                         // Create a FormData object
                         const formData = new FormData();
