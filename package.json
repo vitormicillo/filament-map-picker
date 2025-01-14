@@ -37,6 +37,7 @@
         "dom-to-image": "^2.6.0",
         "esbuild-plugin-url": "^0.0.1",
         "file-saver": "^2.0.5",
+        "html-to-image": "^1.11.11",
         "leaflet": "^1.9.4",
         "leaflet-fullscreen": "^1.0.2"
     }

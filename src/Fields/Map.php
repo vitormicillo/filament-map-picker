@@ -32,7 +32,7 @@ class Map extends Field implements MapOptions
         'rangeSelectField' => 'distance',
         'minZoom' => 1,
         'maxZoom' => 28,
-        'zoom' => 10,
+        'zoom' => 8,
         'markerColor' => '#3b82f6',
         'iconSize' => 32,
         'liveLocation' => false,
@@ -69,7 +69,7 @@ class Map extends Field implements MapOptions
         'touchZoom' => 'center',
         'minZoom' => 1,
         'maxZoom' => 28,
-        'zoom' => 10,
+        'zoom' => 8,
         'fullscreenControl' => true,
     ];
 
