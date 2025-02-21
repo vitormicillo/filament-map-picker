@@ -14,33 +14,107 @@ document.addEventListener('DOMContentLoaded', () => {
             rangeSelectField: null,
             markerShouldMoveWithMap: false,
 
-            // Necessary to validate GEOJSON data
-            isVariableValid: function(value) {
+            /**
+             * Checks if a variable contains valid data (not null, undefined, empty string, etc.).
+             * @param {*} value The variable to check.
+             * @returns {boolean} True if the variable is valid, false otherwise.
+             */
+            isVariableValid(value) {
                 if (typeof value === 'undefined' || value === null) {
                     return false;
                 }
-
                 if (typeof value === 'string') {
                     return value.trim() !== '';
                 }
-
                 if (Array.isArray(value)) {
                     return value.length > 0;
                 }
-
                 if (typeof value === 'object') {
                     return Object.keys(value).length > 0;
                 }
-
                 if (typeof value === 'number') {
                     return !isNaN(value);
                 }
-
                 return typeof value === 'boolean';
             },
 
-            createMap: function(el) {
-                const that = this;
+            /**
+             * Debounces a function.
+             * @param {Function} func The function to debounce.
+             * @param {number} wait The debounce delay in milliseconds.
+             * @returns {Function} The debounced function.
+             */
+            debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), wait);
+                };
+            },
+
+            /**
+             * Loads GeoJSON data onto the map.
+             * @param {string} geojsonData - The GeoJSON data as a string.
+             * @private
+             */
+            _loadGeoJSON(geojsonData) {
+                if (!this.isVariableValid(geojsonData)) {
+                    console.warn("Invalid GeoJSON data provided.");
+                    this.map.setView([config.default.lat, config.default.lng], config.controls.zoom || config.zoom() || 10);
+                    return;
+                }
+
+                try {
+                    const parsedData = JSON.parse(geojsonData);
+
+                    if (this.drawItems) {
+                        this.drawItems.clearLayers();
+                    } else {
+                        this.drawItems = new LF.FeatureGroup().addTo(this.map);
+                    }
+
+                    const newGeoJsonLayer = LF.geoJSON(parsedData, {
+                        style: {
+                            color: config.liveLocation?.color || "#FFFFFF",
+                            fillColor: 'blue',
+                            fillOpacity: 0.5,
+                        }
+                    }).addTo(this.drawItems);
+
+                    const geojsonBounds = newGeoJsonLayer.getBounds();
+                    const zoomLevel = config.controls.zoom || config.zoom() || 13;
+
+                    if (geojsonBounds.isValid()) {
+                        this.map.fitBounds(geojsonBounds, {
+                            maxZoom: zoomLevel,
+                            padding: [20, 20],
+                        });
+                    } else {
+                        console.warn('GeoJSON has invalid or single-point bounds; using defaults.');
+                        let coordinates;
+
+                        if (parsedData.type === 'FeatureCollection' && parsedData.features.length > 0) {
+                            coordinates = parsedData.features[0].geometry.coordinates;
+                        } else if (parsedData.type === 'Feature') {
+                            coordinates = parsedData.geometry.coordinates;
+                        } else if (parsedData.type === 'Point') {
+                            coordinates = parsedData.coordinates;
+                        } else {
+                            console.error('Unsupported GeoJSON type or empty features');
+                            coordinates = [config.default.lng, config.default.lat];
+                        }
+                        this.map.setView([coordinates[1], coordinates[0]], zoomLevel);
+                    }
+                } catch (error) {
+                    console.error("Error parsing or loading GeoJSON:", error);
+                    alert("Error loading GeoJSON data: " + error.message); // User feedback
+                    this.map.setView([config.default.lat, config.default.lng], config.controls.zoom || config.zoom() || 10);
+                }
+            },
+
+            createMap(el) {
+                //const that = this;
                 const geoJsonBox = document.getElementById('geomanbox');
                 const zoomLevel = config.controls.zoom || config.zoom() || 10;
 
@@ -105,26 +179,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     this.setMarkerRange();
 
-                    // Define moveMarkerToCenter function
                     this.moveMarkerToCenter = () => {
                         if(this.markerShouldMoveWithMap){
                             this.marker.setLatLng(this.map.getCenter());
                         }
                     };
 
-                    // Always attach the move event listener
-                    this.map.on('move', this.moveMarkerToCenter);
+                    this.map.on('move', this.debounce(() => {
+                        if (this.markerShouldMoveWithMap) {
+                            this.marker.setLatLng(this.map.getCenter());
+                        }
+                    }, 250));
 
-                    // Set the initial value of markerShouldMoveWithMap
-                    this.markerShouldMoveWithMap = (!location.lat && !location.lng) && !config.clickable;
-
+                    this.map.on('moveend', this.debounce(() => this.updateLocation(), 500));
+                    this.map.on('locationfound', () => {
+                        this.map.setZoom(config.controls.zoom);
+                    });
                 }
-
-                this.map.on('moveend', () => setTimeout(() => this.updateLocation(), 500));
-
-                this.map.on('locationfound', function() {
-                    that.map.setZoom(config.control.zoom);
-                });
 
                 if (!location.lat && !location.lng) {
                     this.map.locate({
@@ -150,14 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Geoman Toolbar Controls, hide or enable it from filament resource
                 if (config.geoManToolbar.show) {
                     this.map.pm.addControls({
+                        snappable: config.geoManToolbar.snappable,
+                        snapDistance: config.geoManToolbar.snapDistance,
                         position: config.geoManToolbar.position,
-                        rotateMode: config.geoManToolbar.rotateMode,
                         drawCircleMarker: config.geoManToolbar.drawCircleMarker,
+                        rotateMode: config.geoManToolbar.rotateMode,
+                        drawRectangle: config.geoManToolbar.drawRectangle,
+                        drawText: config.geoManToolbar.drawText,
                         drawMarker: config.geoManToolbar.drawMarker,
                         drawPolygon: config.geoManToolbar.drawPolygon,
                         drawPolyline: config.geoManToolbar.drawPolyline,
                         drawCircle: config.geoManToolbar.drawCircle,
-                        drawText: config.geoManToolbar.drawText,
                         editMode: config.geoManToolbar.editMode,
                         dragMode: config.geoManToolbar.dragMode,
                         cutPolygon: config.geoManToolbar.cutPolygon,
@@ -165,108 +239,64 @@ document.addEventListener('DOMContentLoaded', () => {
                         deleteLayer: config.geoManToolbar.deleteLayer
                     });
 
-                    let drawItems = new LF.FeatureGroup().addTo(this.map);
+                    // CORRECT: Create the FeatureGroup *once* and store it as a property.
+                    this.drawItems = new LF.FeatureGroup().addTo(this.map);
 
-                    // If GeoJsonBox is available load all necessary
                     if (geoJsonBox) {
                         console.info('geomanbox field exists in DOM');
-
-                        if (this.isVariableValid(geoJsonBox.value)) {
-                            const geomData = JSON.parse(geoJsonBox.value);
-
-                            // Create the GeoJSON layer and add it to the map
-                            drawItems = LF.geoJSON(geomData, {
-                                style: {
-                                    color: config.liveLocation?.color || "#FFFFFF",
-                                    fillColor: 'blue',
-                                    fillOpacity: 0.5,
-                                }
-                            }).addTo(this.map);
-
-                            // Get the bounds of the GeoJSON layer
-                            const geojsonBounds = drawItems.getBounds();
-
-                            // Check if bounds are valid
-                            if (geojsonBounds.isValid()) {
-                                // Fit the map view to the bounds of the GeoJSON layer
-                                this.map.fitBounds(geojsonBounds, {
-                                    maxZoom: zoomLevel, // Use zoomLevel as the maximum zoom level
-                                    padding: [20, 20],  // Optional padding around the features
-                                });
-                            } else {
-                                // Handle single point or invalid bounds
-                                let coordinates;
-
-                                if (geomData.type === 'FeatureCollection' && geomData.features.length > 0) {
-                                    coordinates = geomData.features[0].geometry.coordinates;
-                                } else if (geomData.type === 'Feature') {
-                                    coordinates = geomData.geometry.coordinates;
-                                } else if (geomData.type === 'Point') {
-                                    coordinates = geomData.coordinates;
-                                } else {
-                                    console.error('Unsupported GeoJSON type or empty features');
-                                    // Set to default location if unable to get coordinates
-                                    coordinates = [config.default.lng, config.default.lat];
-                                }
-
-                                // Center the map on the coordinates
-                                this.map.setView([coordinates[1], coordinates[0]], zoomLevel);
-                            }
-
-                        } else {
-                            console.info("No Data to Edit");
-                            // Set the map view to a default position and zoom
-                            this.map.setView([config.default.lat, config.default.lng], zoomLevel);
-                        }
+                        this._loadGeoJSON(geoJsonBox.value); // Load GeoJSON, adding to this.drawItems
                     } else {
                         console.warn("geomanbox field is not available");
                     }
 
-                    // To Drawing shapes in the map
-                    this.map.on('pm:create', function(e) {
+                    // --- Event Handlers ---
+
+                    // Function to handle updates (both create and edit)
+                    const updateGeoJSON = () => {
+                        try {
+                            geoJsonBox.value = JSON.stringify(this.drawItems.toGeoJSON());
+                            $wire.set(config.statePath, { geojson: geoJsonBox.value }, false);
+                            $wire.$refresh();
+                        } catch (error) {
+                            console.error("Error updating GeoJSON:", error);
+                            alert("Error updating GeoJSON: " + error.message);
+                        }
+                    };
+
+                    // Create event
+                    this.map.on('pm:create', (e) => {
                         if (e.layer && e.layer.pm) {
-                            const shape = e;
-                            shape.layer.pm.enable();
-                            drawItems.addLayer(shape.layer);
+                            e.layer.pm.enable(); // Enable editing immediately
+                            this.drawItems.addLayer(e.layer); // Add to the FeatureGroup
 
-                            if (geoJsonBox) {
-                                geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                                $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
-                                $wire.$refresh();
-
-                                shape.layer.on('pm:edit', (e) => {
-                                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                                    $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
-                                    $wire.$refresh();
-                                })
-
-                            } else {
-                                alert("This is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
-                                console.warn("Field 'geomanbox' was not found in the structure")
-                            }
-
+                            // Attach the edit listener to the NEWLY created layer
+                            e.layer.on('pm:edit', updateGeoJSON);
+                            updateGeoJSON(); // Update after creation
                         } else {
                             console.log('Not a shape');
                         }
                     });
 
-                    drawItems.on('pm:edit', (e) => {
-                        geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                        $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
-                        $wire.$refresh();
-                    });
+                    //Edit Event. No need to check for circle.
+                    this.map.on('pm:edit', updateGeoJSON);
 
+                    // Remove event
                     this.map.on('pm:remove', (e) => {
-                        drawItems.removeLayer(e.layer);
-                        geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                        $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
-                        $wire.$refresh();
+                        if (this.drawItems) {
+                            this.drawItems.removeLayer(e.layer);
+                            updateGeoJSON(); // Update after removal
+                        }
+
                     });
 
+                    // Add this to attach edit event to the existent layers
+                    this.drawItems.eachLayer((layer) => {
+                        layer.on('pm:edit', updateGeoJSON);
+                    });
                 }
             },
 
-            updateLocation: function() {
+            updateLocation() {
                 let coordinates = this.getCoordinates();
                 let currentCenter = this.map.getCenter();
 
@@ -275,10 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.fetchInitialCategoryIcon(coordinates.icon);
                 }
 
-                // Only update location if the marker moves with the map center
                 if (this.markerShouldMoveWithMap) {
                     if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
-                        $wire.set(config.statePath, currentCenter, false);
+                        $wire.set(config.statePath, {
+                            ...$wire.get(config.statePath),
+                            lat: currentCenter.lat,
+                            lng: currentCenter.lng
+                        }, false);
                         if (config.liveLocation.send) {
                             $wire.$refresh();
                         }
@@ -286,19 +319,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
-            removeMap: function(el) {
+            removeMap(el) {
                 if (this.marker) {
                     this.marker.remove();
                     this.marker = null;
                 }
-                this.tile.remove();
-                this.tile = null;
-                this.map.off();
-                this.map.remove();
-                this.map = null;
+                if (this.tile) {
+                    this.tile.remove();
+                    this.tile = null;
+                }
+                if (this.map) {
+                    this.map.off();
+                    this.map.remove();
+                    this.map = null;
+                }
             },
 
-            getCoordinates: function() {
+            getCoordinates() {
                 let location = $wire.get(config.statePath) ?? {};
 
                 const hasValidCoordinates = location.hasOwnProperty('lat') && location.hasOwnProperty('lng') &&
@@ -313,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return location;
             },
 
-            setCoordinates: function (coords) {
+            setCoordinates(coords) {
                 $wire.set(config.statePath, {
                     ...$wire.get(config.statePath),
                     lat: coords.lat,
@@ -332,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return coords;
             },
 
-            attach: function(el) {
+            attach(el) {
                 this.createMap(el);
                 const observer = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
@@ -351,22 +388,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 observer.observe(el);
             },
 
-            fetchCurrentLocation: function() {
+            fetchCurrentLocation() {
                 if ('geolocation' in navigator) {
                     navigator.geolocation.getCurrentPosition(async position => {
                         const currentPosition = new LF.LatLng(position.coords.latitude, position.coords.longitude);
-                        await this.map.flyTo(currentPosition);
-                        this.updateLocation();
-                        this.updateMarker();
+                        try {
+                            await this.map.flyTo(currentPosition);
+                            this.updateLocation();
+                            this.updateMarker();
+                        } catch (error) {
+                            console.error("Error during flyTo or update:", error);
+                            alert('An error occurred while updating the map.');
+                        }
                     }, error => {
                         console.error('Error fetching current location:', error);
+                        alert("Error fetching current location: " + error.message); // User-friendly error
                     });
                 } else {
                     alert('Geolocation is not supported by this browser.');
                 }
             },
 
-            addLocationButton: function() {
+            addLocationButton() {
                 const locationButton = document.createElement('button');
                 locationButton.innerHTML = this.defaultIconMarker("currentColor");
                 locationButton.type = 'button';
@@ -375,10 +418,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.map.getContainer().appendChild(locationButton);
             },
 
-            setMarkerRange: function () {
+            setMarkerRange () {
                 if(!this.rangeSelectField)
                     return ;
-                distance=parseInt(this.rangeSelectField.value || 0 ) ;
+                let distance = parseInt(this.rangeSelectField.value || 0 ) ;
                 if (this.rangeCircle) {
                     this.rangeCircle.setLatLng(this.getCoordinates()).setRadius(distance);
                 } else {
@@ -391,7 +434,127 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
-            init: function() {
+            // Returns a standard marker element
+            defaultIconMarker(markerColor){
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
+            },
+
+            updateMarker() {
+                if (config.showMarker) {
+                    this.marker.setLatLng(this.getCoordinates());
+                    this.setMarkerRange();
+                }
+            },
+
+            // Function used for live updated after map rendered
+            // and user set map position on PageResource
+            updateMapLocation(lat, lng, fix) {
+                if (this.marker) {
+                    this.marker.setLatLng([lat, lng]);
+                    this.markerShouldMoveWithMap = !fix;
+                }
+            },
+
+            // Function used for live update icon based on
+            // category selected in Filament Resource
+            // To use this is necessary encode image with base64
+            updateMarkerIcon(base64Icon) {
+                if (this.marker) {
+                    let newIcon;
+                    if (base64Icon[0]['icon']) {
+                        newIcon = LF.icon({
+                            iconUrl: base64Icon[0]['icon'],
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+                    } else {
+                        const markerColor = this.config.markerColor || "#3b82f6";
+                        newIcon = LF.divIcon({
+                            html: this.defaultIconMarker(markerColor),
+                            className: "",
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+                    }
+                    this.marker.setIcon(newIcon);
+                }
+            },
+
+            // Editing a record, if user select a different marker
+            // this function updated maps using the icon url
+            fetchInitialCategoryIcon(icon) {
+                if(this.marker){
+                    let newIcon;
+                    if(icon){
+                        newIcon = LF.icon({
+                            iconUrl: icon,
+                            iconSize: [config.iconSize, config.iconSize]
+                        });
+                        this.marker.setIcon(newIcon);
+                    }
+                }
+            },
+
+            // Function to generate a map snapshot and submit the file to the laravel route
+            // 'admin/upload-map-image' via POST method
+            captureAndUploadMapImage(){
+                const mapContainer = this.map.getContainer();
+
+                toBlob(mapContainer, {
+                    filter: (element) => {
+                            if (element.classList && element.classList.contains('leaflet-control-container')){
+                                return false;
+                            }
+                            return true;
+                        },
+                        width: mapContainer.offsetWidth,
+                        height: mapContainer.offsetHeight
+                    }).then((blob) => {
+
+                        if(!blob || !(blob instanceof Blob)){
+                            throw new Error('domtoimage did not return a valid blob object');
+                        }
+
+                        const formData = new FormData();
+                        formData.append('map_image', blob, 'map.png');
+
+                        // Send the image to the server using fetch API
+                        fetch('/admin/upload-map-image', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            },
+                            body: formData,
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    console.info('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
+                                    alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
+                                } else {
+                                    console.error('Error uploading map image:', data.message);
+                                    alert('Error uploading map image:' + data.message);
+                                }
+                            })
+                            .catch((error) => {
+                                console.error('Error uploading map image:', error);
+                                alert('Error capturing map image:' + error);
+                            });
+                    }).catch((error) => {
+                        console.error('Error capturing map image:', error);
+                        alert('Error capturing map image:' + error);
+                    });
+            },
+
+            // Function to create shapes based in the geojson file from filament file field
+            loadGeoJsonDataFromFile(data) {
+                this._loadGeoJSON(data[0]);
+            },
+
+            refreshMap() {
+                this.map.flyTo(this.getCoordinates());
+                this.updateMarker();
+            },
+
+            init() {
                 this.$wire = $wire;
                 this.config = config;
                 this.state = state;
@@ -416,168 +579,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.loadGeoJsonDataFromFile(data);
                 });
             },
-
-            // Returns a standard marker element
-            defaultIconMarker: function(markerColor){
-                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
-            },
-
-            updateMarker: function() {
-                if (config.showMarker) {
-                    this.marker.setLatLng(this.getCoordinates());
-                    this.setMarkerRange();
-                    setTimeout(() => this.updateLocation(), 500);
-                }
-            },
-
-            // Function used for live updated after map rendered
-            // and user set map position on PageResource
-            updateMapLocation: function(lat, lng, fix) {
-                // Set marker to the new coordinates and update flag
-                if (this.marker) {
-                    this.marker.setLatLng([lat, lng]);
-                    this.markerShouldMoveWithMap = !fix;
-                }
-            },
-
-            // Function used for live update icon based on
-            // category selected in Filament Resource
-            // To use this is necessary encode image with base64
-            updateMarkerIcon: function(base64Icon) {
-                if (this.marker) {
-                    let newIcon;
-                    if (base64Icon[0]['icon']) {
-                        // Create a new icon
-                        newIcon = LF.icon({
-                            iconUrl: base64Icon[0]['icon'],
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-                    } else {
-                        // Use the default icon
-                        const markerColor = this.config.markerColor || "#3b82f6";
-                        newIcon = LF.divIcon({
-                            html: this.defaultIconMarker(markerColor),
-                            className: "",
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-                    }
-
-                    this.marker.setIcon(newIcon);
-                }
-            },
-
-            // Editing a record, if user select a different marker
-            // this function updated maps using the icon url
-            fetchInitialCategoryIcon: function(icon) {
-                if(this.marker){
-                    let newIcon;
-                    if(icon){
-                        newIcon = LF.icon({
-                            iconUrl: icon,
-                            iconSize: [config.iconSize, config.iconSize]
-                        });
-                        this.marker.setIcon(newIcon);
-                    }
-                }
-            },
-
-            // Function to generate a map snapshot and submit the file to the laravel route
-            // 'admin/upload-map-image' via POST method
-            captureAndUploadMapImage: function(){
-                const mapContainer = this.map.getContainer();
-
-                toBlob(mapContainer, {
-                    // Hide controls before generating image
-                    filter: (element) => {
-                            if (element.classList && element.classList.contains('leaflet-control-container')){
-                                return false;
-                            }
-                            return true;
-                        },
-                        // Optionally specify width/height:
-                        width: mapContainer.offsetWidth,
-                        height: mapContainer.offsetHeight
-                    }).then((blob) => {
-
-                        if(!blob || !(blob instanceof Blob)){
-                            throw new Error('domtoimage did not return a valid blob object');
-                        }
-
-                        // Create a FormData object
-                        const formData = new FormData();
-                        formData.append('map_image', blob, 'map.png');
-
-                        // Send the image to the server using fetch API
-                        fetch('/admin/upload-map-image', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            },
-                            body: formData,
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    console.info('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
-                                    alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
-                                } else {
-                                    console.error('Error uploading map image:', data.message);
-                                    alert('Error uploading map image:'+ data.message);
-                                }
-                            })
-                            .catch((error) => {
-                                console.error('Error uploading map image:', error);
-                                alert('Error capturing map image:'+ error);
-                            });
-                    })
-                    .catch((error) => {
-                        console.error('Error capturing map image:', error);
-                        alert('Error capturing map image:'+ error);
-                    });
-            },
-
-            // Function to create shapes based in the geojson file from filament file field
-            loadGeoJsonDataFromFile(data) {
-                if(this.isVariableValid(data)){
-                    const coordinates = JSON.parse(data[0]);
-
-                    // Clear existing layers if you want to replace them entirely
-                    if (this.drawItems) {
-                        // If `drawItems` is a FeatureGroup, you can clear it:
-                        this.drawItems.clearLayers();
-                    } else {
-                        // If drawItems hasn't been set yet, create it
-                        this.drawItems = new LF.FeatureGroup().addTo(this.map);
-                    }
-
-                    const newGeoJsonLayer = LF.geoJSON(coordinates, {
-                        style: {
-                            color: "#FFFFFF",
-                            fillColor: 'blue',
-                            fillOpacity: 0.5
-                        }
-                    }).addTo(this.drawItems);
-
-                    // Attempt to fit the map to the new layer’s bounds
-                    const geojsonBounds = newGeoJsonLayer.getBounds();
-                    const zoomLevel = this.config.controls.zoom || this.config.zoom() || 13;
-
-                    if (geojsonBounds.isValid()) {
-                        this.map.fitBounds(geojsonBounds, {
-                            maxZoom: zoomLevel,
-                            padding: [20, 20],
-                        });
-                    } else {
-                        console.warn('GeoJSON has invalid or single-point bounds; using defaults.');
-                        this.map.setView([this.config.default.lat, this.config.default.lng], zoomLevel);
-                    }
-                }
-            },
-
-            refreshMap: function() {
-                this.map.flyTo(this.getCoordinates());
-                this.updateMarker();
-            }
         };
     };
     window.dispatchEvent(new CustomEvent('map-script-loaded'));
