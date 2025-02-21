@@ -8,14 +8,15 @@
 
 ## Introduction 
 
-Map Picker is a custom field of Filament designed to simplify the process of selecting a location on a map and obtaining its 
-geo-coordinates with the ease of having the Geoman plugin embedded in the map.
+Map Picker is a custom map toolbox for Filament that streamlines location selection and retrieves geo-coordinates effortlessly, seamlessly integrating the powerful Geoman plugin for enhanced mapping functionality.
 
 * Features include: 
    * A Field for Filament-v3 with Leaflet Map Integration
    * Receive Real-time Coordinates Upon Marker Movement Completion
    * Tailor Controls and Marker Appearance to Your Preferences
+    
 * Latest versions of PHP and Filament
+
 * Best practices applied:
   * [`README.md`][link-readme] (badges included)
   * [`LICENSE`][link-license]
@@ -36,6 +37,7 @@ This package now includes integration with GeoMan, a powerful tool for creating 
 - Rotate shapes
 - Drag mode for easy shape manipulation
 - Delete layers
+- Upload Geojson files
 
 ## Supported Maps
 
@@ -52,11 +54,22 @@ You can easily install the package via Composer:
 composer require doode/filament-map-picker
 ```
 ## `Basic` Usage
-Resource file:
+FilamentResource file:
 
 ```php
 <?php
 namespace App\Filament\Resources;
+use Filament\Resources\Resource;
+use Filament\Resources\Forms\Form;
+use Filament\Forms\Components\{
+    Actions,
+    Actions\Action,
+    Fieldset,
+    FileUpload,
+    Hidden,
+    TextInput,
+    Textarea,
+};
 
 use Doode\MapPicker\Fields\Map;
 ...
@@ -67,38 +80,35 @@ class FilamentResource extends Resource
     public static function form(Form $form)
     {
         return $form->schema([
-            Map::make('location')
-                ->label('Location')
+            Map::make('map')
                 ->columnSpanFull()
-                ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
-                ->afterStateUpdated(function (callable $set, ?array $state): void {
-                    $set('latitude', $state['lat']);
-                    $set('longitude', $state['lng']);
-                })
-                ->afterStateHydrated(function ($state, $record, callable $set): void {
-                    $set('location', ['lat' => $record->latitude, 'lng' => $record->longitude]);
-                })
-                ->extraStyles([
-                    'min-height: 100vh',
-                    'border-radius: 10px'
-                ])
-                ->liveLocation(true, true, 5000)
-                ->showMarker()
-                ->markerColor("#22c55eff")
                 ->showFullscreenControl()
                 ->showZoomControl()
                 ->draggable()
-                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-                ->zoom(13)
+                ->zoom(10)
                 ->detectRetina()
+                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
+                ->extraStyles(['min-height: 100vh','border-radius: 5px'])
+                
+                // Location
+                ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
+                ->liveLocation(true, true, 5000)
                 ->showMyLocationButton()
+                ->boundaries(true, 49.5, -11, 61, 2) // Example for United Kingdom
+                ->rangeSelectField('distance')
+                
+                // Marker Configuration
+                ->showMarker()
+                ->markerColor("#22c55eff")
+                ->clickable() //click to set marker
+                
+                // GeoMan Toolbar
                 ->geoManToolbar(true)
                 ->geoManEditable(true)
                 ->geoManPosition('topleft')
                 ->drawCircleMarker()
                 ->rotateMode()
-                ->clickable() //click to move marker
-                ->drawText() //disabled by default
+                ->drawText()
                 ->drawMarker()
                 ->drawPolygon()
                 ->drawPolyline()
@@ -109,14 +119,48 @@ class FilamentResource extends Resource
                 ->deleteLayer()
                 ->setColor('#3388ff')
                 ->setFilledColor('#cad9ec')
+                
+                //State Management
+                ->afterStateUpdated(function (callable $set, ?array $state): void {
+                    $set('latitude', $state['lat']);
+                    $set('longitude', $state['lng']);
+                    $set('geomanbox', json_encode($state)); 
+                })
+                ->afterStateHydrated(function ($state, $record, callable $set): void {
+                    $set('location', ['lat' => $record->latitude, 'lng' => $record->longitude]);
+                    $set( 'geomanbox', json_decode(strip_tags($record?->geomanbox)) );
+                })
            ]),
            
            // Field to store the geojson data
-           Hidden::make('geomanbox')
+           Hidden::make('geomanbox')->id('geomanbox')
     }
     ...
 }
 ```
+
+![img_2.png](img_2.png)
+```php
+// Starting from version 1.5.1           
+// Map Picker allows you to upload a GeoJSON file, automatically reading and rendering all shapes on the map
+// for a seamless and interactive mapping experience.
+// Here is an example of how to use it.
+FileUpload::make('file')
+    ->acceptedFileTypes(['application/json', 'application/geo+json'])
+    ->maxSize(1024)
+    ->storeFiles(false) // Store file is not necessary
+    ->afterStateUpdated(function ($state, callable $set, $livewire){
+        if (!$state){ return; }
+        $geojsonData = json_decode($state->get(), true);
+        if (!$geojsonData) { return; }
+        if (isset($geojsonData['type']) && $geojsonData['type'] === 'FeatureCollection') {
+            $set('geom', json_encode($geojsonData['features']));
+            $set('name', $geojsonData['name'] ?? $geojsonData['features'][0]['properties']['name'] ?? 'Name Unknown');
+            $livewire->dispatch('loadGeoJsonDataFromFile', json_encode($geojsonData['features']));
+        }
+    }),
+```
+
 
 ### `clickable` Option
 
@@ -125,9 +169,9 @@ dragged underneath. You could, with this, keep the map still and lock the zoom a
 
 ```php
 Map::make('location')
-    ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
     ->showMarker(true)
     ->clickable(true)
+    ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
     ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
     ->zoom(12)
 ```
@@ -146,14 +190,14 @@ Fieldset::make('Location')
             ->required(),
 
         Map::make('location')
-            ->defaultLocation(latitude: 40.4168, longitude: -3.7038)
             ->showMarker(true)
             ->showFullscreenControl(false)
             ->showZoomControl()
             ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
             ->zoom(12)
             ->detectRetina()
-            ->rangeSelectField('membership_distance')
+            ->defaultLocation(latitude: 40.4168, longitude: -3.7038)
+            ->rangeSelectField('distance')
             ->setFilledColor('#cad9ec'),
     ])
     ->columns(1),
@@ -193,7 +237,7 @@ error is the best method.
 ```php
 Map::make('location')
     ->showMarker()
-    ->boundaries(true,49,11.1,61.0,2.1)
+    ->boundaries(true,49,11.1,61.0,2.1) //Example for United Kingdom
     ->draggable()
 ```
 
@@ -242,13 +286,14 @@ Here's a table describing all available options and their default values:
 | geoMan.filledColor      | Fill color for drawings      | '#cad9ec'                                       |
 
 
-# New feature to capture image from the map
+# New feature to capture image snapshot from the map
 ![img_1.png](img_1.png)
 
 This is an example of the code in how to trigger the function in the map in order to capture the snapshot.
 Note: Latitude and longitude are not mandatory, you can move the map and trigger the action to capture the image.
 
 “If you have Geoman shapes drawn on your map, they will be included in the generated image.”
+Here is an example of how to use this feature.
 ```php
 Actions::make([
    Action::make('capture_map_image')
@@ -268,7 +313,37 @@ Actions::make([
 In your web.php file is necessary to add the route, i.e you can use a custom Controller
 The map feature will post the blob image to this url /upload-map-image
 ```php
+// web.php file
 Route::post('/upload-map-image', [MapController::class, 'uploadMapImage'])->name('upload.map.image');
+
+// MapController file or any name you want to use
+// You can customise your controller to handle the temporary image file path in various ways,
+// such as storing it in the session, updating a database record, moving the file, or implementing any other logic you require.
+// The possibilities are limitless – let your creativity guide you.
+// For example, how to store in a session:
+class MapController extends Controller
+{
+    public function uploadMapImage(Request $request)
+    {
+        // Validate the incoming request, max size is 10MB
+        $request->validate(['map_image' => 'required|image|max:10240']);
+
+        if ($request->hasFile('map_image')) {
+            $file = $request->file('map_image');
+            $path = $file->store('maps');
+
+            if($path){
+                session(['uploaded_map_image_path' => $path]);
+                return response()->json(['success' => true]);
+            }
+        }
+
+        return response()->json([
+            'error' => false,
+            'message' => 'No image uploaded / Failed to remove transparency'
+        ], 400);
+    }
+}
 ```
 
 
@@ -306,19 +381,15 @@ public static function infolist(Infolist $infolist): Infolist
     return $infolist
         ->schema([
             MapEntry::make('location')
-                ->extraStyles([
-                    'min-height: 50vh',
-                    'border-radius: 50px'
-                ])
-                ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude])
                 ->showMarker()
                 ->iconSize(32)
                 ->showGeomanToolbar()
                 ->markerColor("#22c55eff")
                 ->showFullscreenControl()
                 ->draggable(false)
-                ->zoom(15),
-
+                ->zoom(15)
+                ->extraStyles(['min-height: 50vh','border-radius: 50px'])
+                ->state(fn ($record) => ['lat' => $record?->latitude, 'lng' => $record?->longitude]),
             .....
         ]);
 }

@@ -38,6 +38,8 @@ interface MapOptions
     public function drawPolygon(bool $draw = true): self;
     public function drawPolyline(bool $draw = true): self;
     public function drawCircle(bool $draw = true): self;
+    public function snappable(bool $snappable = true, int $distance = 20): self;
+    public function drawRectangle(bool $draw = true): self;
     public function drawText(bool $draw = true): self;
     public function editPolygon(bool $edit = true): self;
     public function deleteLayer(bool $delete = true): self;
