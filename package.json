@@ -1,13 +1,13 @@
 {
     "name": "filament-map-picker",
-    "version": "1.5.0",
+    "version": "1.5.2",
     "description": "A filament plugin designed to simplify the process of selecting a location on a map and obtaining its geo-coordinates with the ease of having the Geoman plugin embedded.",
+    "private": true,
+    "type": "module",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/vitormicillo/filament-map-picker.git"
     },
-    "private": true,
-    "type": "module",
     "scripts": {
         "dev:styles": "npx tailwindcss -i resources/css/index.css -o resources/dist/filament-map-picker.css --postcss --watch",
         "dev:scripts": "node bin/build.js --dev",
@@ -22,7 +22,7 @@
         "@tailwindcss/forms": "^0.5.4",
         "@tailwindcss/typography": "^0.5.9",
         "autoprefixer": "^10.4.14",
-        "esbuild": "^0.24.0",
+        "esbuild": "^0.25.0",
         "npm-run-all": "^4.1.5",
         "postcss": "^8.4.26",
         "postcss-assets": "^6.0.0",

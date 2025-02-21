@@ -2,7 +2,6 @@ import * as LF from 'leaflet'
 import 'leaflet-fullscreen'
 import '@geoman-io/leaflet-geoman-free'
 import { toBlob } from 'html-to-image';
-import {zoom} from 'leaflet/src/control/Control.Zoom.js'
 
 document.addEventListener('DOMContentLoaded', () => {
     window.mapPicker = ($wire, config, state) => {
@@ -42,14 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             createMap: function(el) {
                 const that = this;
-
                 const geoJsonBox = document.getElementById('geomanbox');
-                const zoomLevel = config.controls.zoom || config.zoom() || 15;
+                const zoomLevel = config.controls.zoom || config.zoom() || 10;
 
                 this.map = LF.map(el, config.controls);
 
-                if(config.bounds)
-                {
+                if(config.bounds) {
                     let southWest = LF.latLng(config.bounds.sw.lat, config.bounds.sw.lng);
                     let northEast = LF.latLng(config.bounds.ne.lat, config.bounds.ne.lng);
                     let bounds = LF.latLngBounds(southWest, northEast);
@@ -71,8 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.map.dragging.disable();
                 }
 
-                if(config.clickable)
-                {
+                if(config.clickable) {
                     this.map.on('click', function(e) {
                         that.setCoordinates(e.latlng);
                     });
@@ -88,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     crossOrigin: true
                 }).addTo(this.map);
 
-                let drawItems = new LF.FeatureGroup().addTo(this.map);
                 let location = state ?? this.getCoordinates();
 
                 if (config.showMarker) {
@@ -170,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         deleteLayer: config.geoManToolbar.deleteLayer
                     });
 
+                    let drawItems = new LF.FeatureGroup().addTo(this.map);
+
                     // If GeoJsonBox is available load all necessary
                     if (geoJsonBox) {
                         console.info('geomanbox field exists in DOM');
@@ -224,58 +221,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.warn("geomanbox field is not available");
                     }
-                }
 
-                // To Drawing shapes in the map
-                this.map.on('pm:create', function(e) {
-                    if (e.layer && e.layer.pm) {
-                        const shape = e;
-                        shape.layer.pm.enable();
-                        drawItems.addLayer(shape.layer);
+                    // To Drawing shapes in the map
+                    this.map.on('pm:create', function(e) {
+                        if (e.layer && e.layer.pm) {
+                            const shape = e;
+                            shape.layer.pm.enable();
+                            drawItems.addLayer(shape.layer);
 
-                        if (geoJsonBox) {
-                            geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-
-                            $wire.set(config.statePath, {
-                                geojson: JSON.stringify(drawItems.toGeoJSON())
-                            }, false)
-
-                            $wire.$refresh();
-
-                            shape.layer.on('pm:edit', (e) => {
+                            if (geoJsonBox) {
                                 geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                                $wire.set(config.statePath, {
-                                    geojson: JSON.stringify(drawItems.toGeoJSON())
-                                }, false)
+                                $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
                                 $wire.$refresh();
-                            })
+
+                                shape.layer.on('pm:edit', (e) => {
+                                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                                    $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
+                                    $wire.$refresh();
+                                })
+
+                            } else {
+                                alert("This is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
+                                console.warn("Field 'geomanbox' was not found in the structure")
+                            }
 
                         } else {
-                            alert("This is just an alert to let you know the field 'geomanbox' was not found in the form to store geojson data")
-                            console.warn("Field 'geomanbox' was not found in the structure")
+                            console.log('Not a shape');
                         }
+                    });
 
-                    } else {
-                        console.log('Not a shape');
-                    }
-                });
+                    drawItems.on('pm:edit', (e) => {
+                        geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                        $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
+                        $wire.$refresh();
+                    });
 
-                drawItems.on('pm:edit', (e) => {
-                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                    this.map.on('pm:remove', (e) => {
+                        drawItems.removeLayer(e.layer);
+                        geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
+                        $wire.set(config.statePath, { geojson: geoJsonBox.value }, false)
+                        $wire.$refresh();
+                    });
 
-                    $wire.set(config.statePath, {
-                        geojson: JSON.stringify(drawItems.toGeoJSON())
-                    }, false)
-
-                    $wire.$refresh();
-                });
-
-                this.map.on('pm:remove', (e) => {
-                    drawItems.removeLayer(e.layer);
-                    geoJsonBox.value = JSON.stringify(drawItems.toGeoJSON());
-                    $wire.$refresh();
-                });
-
+                }
             },
 
             updateLocation: function() {
@@ -287,8 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.fetchInitialCategoryIcon(coordinates.icon);
                 }
 
+                // Only update location if the marker moves with the map center
                 if (this.markerShouldMoveWithMap) {
-                    // Only update location if the marker moves with the map center
                     if (coordinates.lng !== currentCenter.lng || coordinates.lat !== currentCenter.lat) {
                         $wire.set(config.statePath, currentCenter, false);
                         if (config.liveLocation.send) {
@@ -322,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         lng: config.default.lng
                     };
                 }
-
                 return location;
             },
 
@@ -338,11 +325,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Update the marker position
-                this.marker.setLatLng(coords);
-
                 // Since the user explicitly set the coordinates, we may want to fix the marker
+                this.marker.setLatLng(coords);
                 this.markerShouldMoveWithMap = false;
-
                 this.updateMarker();
                 return coords;
             },
@@ -383,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             addLocationButton: function() {
                 const locationButton = document.createElement('button');
-                locationButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 0C8.25 0 5 3.25 5 7c0 5.25 7 13 7 13s7-7.75 7-13c0-3.75-3.25-7-7-7zm0 10c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm0-5c-1.11 0-2 .89-2 2s.89 2 2 2 2-.89 2-2-.89-2-2-2z"/></svg>';
+                locationButton.innerHTML = this.defaultIconMarker("currentColor");
                 locationButton.type = 'button';
                 locationButton.classList.add('map-location-button');
                 locationButton.onclick = () => this.fetchCurrentLocation();
@@ -411,25 +396,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.config = config;
                 this.state = state;
                 this.rangeSelectField = document.getElementById(config.rangeSelectField || 'data.distance');
-                // let that=this
-                // if(this.rangeSelectField){
-                //     this.rangeSelectField.addEventListener('change', function () {that.updateMarker(); });
-                // }
 
                 $wire.on('refreshMap', this.refreshMap.bind(this));
 
                 $wire.on('captureMapImage', () => {
                     this.captureAndUploadMapImage();
-                })
+                });
 
                 $wire.on('updateMapLocation', (coordinates) => {
                     const { lat, lng, fix } = coordinates[0];
                     this.updateMapLocation(lat,lng,fix);
-                })
+                });
 
                 $wire.on('updateMarkerIcon', (icon) => {
                     this.updateMarkerIcon(icon);
-                })
+                });
+
+                $wire.on('loadGeoJsonDataFromFile', (data) => {
+                    this.loadGeoJsonDataFromFile(data);
+                });
+            },
+
+            // Returns a standard marker element
+            defaultIconMarker: function(markerColor){
+                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             updateMarker: function() {
@@ -443,13 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Function used for live updated after map rendered
             // and user set map position on PageResource
             updateMapLocation: function(lat, lng, fix) {
+                // Set marker to the new coordinates and update flag
                 if (this.marker) {
-                    // Set marker to the new coordinates
                     this.marker.setLatLng([lat, lng]);
-
-                    // Update the markerShouldMoveWithMap flag
                     this.markerShouldMoveWithMap = !fix;
-                    console.log('markerShouldMoveWithMap is now', this.markerShouldMoveWithMap);
                 }
             },
 
@@ -489,14 +476,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             iconUrl: icon,
                             iconSize: [config.iconSize, config.iconSize]
                         });
-
                         this.marker.setIcon(newIcon);
                     }
                 }
-            },
-
-            defaultIconMarker: function(markerColor){
-                return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             // Function to generate a map snapshot and submit the file to the laravel route
@@ -552,6 +534,44 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Error capturing map image:', error);
                         alert('Error capturing map image:'+ error);
                     });
+            },
+
+            // Function to create shapes based in the geojson file from filament file field
+            loadGeoJsonDataFromFile(data) {
+                if(this.isVariableValid(data)){
+                    const coordinates = JSON.parse(data[0]);
+
+                    // Clear existing layers if you want to replace them entirely
+                    if (this.drawItems) {
+                        // If `drawItems` is a FeatureGroup, you can clear it:
+                        this.drawItems.clearLayers();
+                    } else {
+                        // If drawItems hasn't been set yet, create it
+                        this.drawItems = new LF.FeatureGroup().addTo(this.map);
+                    }
+
+                    const newGeoJsonLayer = LF.geoJSON(coordinates, {
+                        style: {
+                            color: "#FFFFFF",
+                            fillColor: 'blue',
+                            fillOpacity: 0.5
+                        }
+                    }).addTo(this.drawItems);
+
+                    // Attempt to fit the map to the new layer’s bounds
+                    const geojsonBounds = newGeoJsonLayer.getBounds();
+                    const zoomLevel = this.config.controls.zoom || this.config.zoom() || 13;
+
+                    if (geojsonBounds.isValid()) {
+                        this.map.fitBounds(geojsonBounds, {
+                            maxZoom: zoomLevel,
+                            padding: [20, 20],
+                        });
+                    } else {
+                        console.warn('GeoJSON has invalid or single-point bounds; using defaults.');
+                        this.map.setView([this.config.default.lat, this.config.default.lng], zoomLevel);
+                    }
+                }
             },
 
             refreshMap: function() {
