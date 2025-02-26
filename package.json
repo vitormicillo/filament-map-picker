@@ -1,6 +1,6 @@
 {
     "name": "filament-map-picker",
-    "version": "1.5.2",
+    "version": "1.6.0",
     "description": "A filament plugin designed to simplify the process of selecting a location on a map and obtaining its geo-coordinates with the ease of having the Geoman plugin embedded.",
     "private": true,
     "type": "module",
