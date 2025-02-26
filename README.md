@@ -4,7 +4,7 @@
 [![Total Downloads][ico-downloads]][link-downloads]
 [![Software License][ico-license]][link-license]
 
-![img.png](img.png)
+![img_3.png](img_3.png)
 
 ## Introduction 
 
@@ -85,14 +85,47 @@ class FilamentResource extends Resource
                 ->showFullscreenControl()
                 ->showZoomControl()
                 ->draggable()
-                ->zoom(10)
+                ->zoom(10) // Not required anymore
                 ->detectRetina()
-                ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
                 ->extraStyles(['min-height: 100vh','border-radius: 5px'])
+                ->extraControl(['zoomDelta' => 1, 'zoomSnap' => 2])
+                
+                // Layers Configuration From version 1.6
+                ->baseLayers([
+                        [
+                            'name' => 'OpenStreetMap',
+                            'url' => "https://tile.openstreetmap.de/{z}/{x}/{y}.png",
+                            'minZoom' => 1,
+                            'maxZoom' => 28,
+                        ],
+                        [
+                            'name' => 'GoogleMap',
+                            'url' => "google.maps.googleapis.com",
+                            'minZoom' => 1,
+                            'maxZoom' => 28,
+                        ],
+                        [
+                            'name' => 'SatelliteMap',
+                            'url' => "url_satellite",
+                            'minZoom' => 1,
+                            'maxZoom' => 28,
+                        ]
+                    ])
+                    ->defaultBaseLayer('Standard')
+                    ->overlayLayers([
+                        [
+                            'name' => 'Marine Charts',
+                            'url' => "url_marine_charts",
+                            'minZoom' => 1,
+                            'maxZoom' => 18,
+                            'opacity' => 0.5,
+                            'visibleByDefault' => false
+                        ]
+                    ])
                 
                 // Location
                 ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
-                ->liveLocation(true, true, 5000)
+                ->liveLocation(true, true, 5000) // or simple use `false` to disable live
                 ->showMyLocationButton()
                 ->boundaries(true, 49.5, -11, 61, 2) // Example for United Kingdom
                 ->rangeSelectField('distance')
@@ -100,25 +133,26 @@ class FilamentResource extends Resource
                 // Marker Configuration
                 ->showMarker()
                 ->markerColor("#22c55eff")
-                ->clickable() //click to set marker
+                ->clickable() // Click to set marker
+                ->iconSize(32) // Icon size
                 
                 // GeoMan Toolbar
                 ->geoManToolbar(true)
                 ->geoManEditable(true)
-                ->geoManPosition('topleft')
-                ->drawCircleMarker()
-                ->rotateMode()
-                ->drawText()
-                ->drawMarker()
-                ->drawPolygon()
-                ->drawPolyline()
-                ->drawCircle()
-                ->dragMode()
-                ->cutPolygon()
-                ->editPolygon()
-                ->deleteLayer()
+                ->geoManPosition('topleft') // other options are: topright, bottomright and bottomleft
+                ->drawCircleMarker(true)
+                ->rotateMode(true)
+                ->drawText(true)
+                ->drawMarker(true)
+                ->drawPolygon(true)
+                ->drawPolyline(true)
+                ->drawCircle(true)
+                ->dragMode(true)
+                ->cutPolygon(true)
+                ->editPolygon(true)
+                ->deleteLayer(true)
                 ->setColor('#3388ff')
-                ->setFilledColor('#cad9ec')
+                ->setFilledColor('#cad9ec') // Color inside the shapes
                 
                 //State Management
                 ->afterStateUpdated(function (callable $set, ?array $state): void {
@@ -141,7 +175,7 @@ class FilamentResource extends Resource
 
 ![img_2.png](img_2.png)
 ```php
-// Starting from version 1.5.1           
+// Starting from version 1.6.0           
 // Map Picker allows you to upload a GeoJSON file, automatically reading and rendering all shapes on the map
 // for a seamless and interactive mapping experience.
 // Here is an example of how to use it.
@@ -172,8 +206,8 @@ Map::make('location')
     ->showMarker(true)
     ->clickable(true)
     ->defaultLocation(latitude: 52.8027, longitude: -1.0546)
-    ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-    ->zoom(12)
+    ->zoom(12) // Not required anymore
+    //->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png") //Not in use from version 1.6.0
 ```
 
 ### `rangeSelectField` Option
@@ -193,12 +227,12 @@ Fieldset::make('Location')
             ->showMarker(true)
             ->showFullscreenControl(false)
             ->showZoomControl()
-            ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png")
-            ->zoom(12)
+            ->zoom(12) // Not required anymore
             ->detectRetina()
             ->defaultLocation(latitude: 40.4168, longitude: -3.7038)
             ->rangeSelectField('distance')
             ->setFilledColor('#cad9ec'),
+            //->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png") //Not in use from version 1.6.0
     ])
     ->columns(1),
 ```
@@ -252,38 +286,40 @@ This is a convenience function that uses the boundaries option above, setting th
 
 Here's a table describing all available options and their default values:
 
-| Option                  | Description                  | Default Value                                   |
-|-------------------------|------------------------------|-------------------------------------------------|
-| draggable               | Allow map dragging           | true                                            |
-| showMarker              | Display marker on the map    | true                                            |
-| tilesUrl                | URL for map tiles            | 'http://tile.openstreetmap.org/{z}/{x}/{y}.png' |
-| attribution             | Map attribution text         | null                                            |
-| zoomOffset              | Zoom offset                  | -1                                              |
-| tileSize                | Tile size                    | 512                                             |
-| detectRetina            | Detect and use retina tiles  | true                                            |
-| minZoom                 | Minimum zoom level           | 0                                               |
-| maxZoom                 | Maximum zoom level           | 28                                              |
-| zoom                    | Default zoom level           | 15                                              |
-| markerColor             | Color of the marker          | '#3b82f6'                                       |
-| liveLocation            | Enable live location updates | [false, false, 5000]                            |
-| showMyLocationButton    | Show "My Location" button    | false                                           |
-| default                 | Default location             | ['lat' => 0, 'lng' => 0]                        |
-| geoManToolbox.show      | Enable GeoMan                | false                                           |
-| geoMan.editable         | Allow editing with GeoMan    | true                                            |
-| geoMan.position         | Position of GeoMan controls  | 'topleft'                                       |
-| geoMan.drawCircleMarker | Allow drawing circle markers | true                                            |
-| geoMan.rotateMode       | Enable rotate mode           | true                                            |
-| geoMan.drawText         | Allow drawing text blocks    | false                                           |
-| geoMan.drawMarker       | Allow drawing markers        | true                                            |
-| geoMan.drawPolygon      | Allow drawing polygons       | true                                            |
-| geoMan.drawPolyline     | Allow drawing polylines      | true                                            |
-| geoMan.drawCircle       | Allow drawing circles        | true                                            |
-| geoMan.dragMode         | Enable drag mode             | true                                            |
-| geoMan.cutPolygon       | Allow cutting polygons       | true                                            |
-| geoMan.editPolygon      | Allow editing polygons       | true                                            |
-| geoMan.deleteLayer      | Allow deleting layers        | true                                            |
-| geoMan.color            | Stroke color for drawings    | '#3388ff'                                       |
-| geoMan.filledColor      | Fill color for drawings      | '#cad9ec'                                       |
+| Option                  | Description                  | Default Value            |
+|-------------------------|------------------------------|--------------------------|
+| draggable               | Allow map dragging           | true                     |
+| showMarker              | Display marker on the map    | true                     |
+| baseLayers              | Array for map tiles          | Array                    |
+| defaultBaseLayer        | The default map name         | OpenStreetMap            |
+| overlayLayers           | Array for extras to overlay  | Array                    |
+| attribution             | Map attribution text         | null                     |
+| zoomOffset              | Zoom offset                  | -1                       |
+| tileSize                | Tile size                    | 512                      |
+| detectRetina            | Detect and use retina tiles  | true                     |
+| minZoom                 | Minimum zoom level           | 1                        |
+| maxZoom                 | Maximum zoom level           | 28                       |
+| zoom                    | Default zoom level           | 10                       |
+| markerColor             | Color of the marker          | '#3b82f6'                |
+| liveLocation            | Enable live location updates | [false, false, 5000]     |
+| showMyLocationButton    | Show "My Location" button    | false                    |
+| default                 | Default location             | ['lat' => 0, 'lng' => 0] |
+| geoManToolbox.show      | Enable GeoMan                | true                     |
+| geoMan.editable         | Allow editing with GeoMan    | true                     |
+| geoMan.position         | Position of GeoMan controls  | 'topleft'                |
+| geoMan.drawCircleMarker | Allow drawing circle markers | true                     |
+| geoMan.rotateMode       | Enable rotate mode           | true                     |
+| geoMan.drawText         | Allow drawing text blocks    | false                    |
+| geoMan.drawMarker       | Allow drawing markers        | true                     |
+| geoMan.drawPolygon      | Allow drawing polygons       | true                     |
+| geoMan.drawPolyline     | Allow drawing polylines      | true                     |
+| geoMan.drawCircle       | Allow drawing circles        | true                     |
+| geoMan.dragMode         | Enable drag mode             | true                     |
+| geoMan.cutPolygon       | Allow cutting polygons       | true                     |
+| geoMan.editPolygon      | Allow editing polygons       | true                     |
+| geoMan.deleteLayer      | Allow deleting layers        | true                     |
+| geoMan.color            | Stroke color for drawings    | '#3388ff'                |
+| geoMan.filledColor      | Fill color for drawings      | '#cad9ec'                |
 
 
 # New feature to capture image snapshot from the map
@@ -490,7 +526,7 @@ Example in how to use custom SVG Icon when "edit" a record from database
                        ->showFullscreenControl(true)
                        ->showZoomControl()
                        ->draggable()
-                       ->tilesUrl(self::getMapBox())
+                       ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png") // **Necessary from version below 1.6**
                        ->zoom(6)
                        ->detectRetina()
                        ->showMyLocationButton(false)
