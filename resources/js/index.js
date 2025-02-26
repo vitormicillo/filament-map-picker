@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             createMap: function(el) {
                 const that = this;
                 const geoJsonBox = document.getElementById('geomanbox');
-                const zoomLevel = config.controls.zoom || config.zoom() || 10;
+                const zoomLevel = config.controls.zoom || config.zoom() || 13;
 
                 this.map = LF.map(el, config.controls);
 
@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if(config.clickable) {
+                    // Note: I can't use doubleClick here because it will interfere with map zoom :-(
                     this.map.on('click', (e) => {
                         this.setCoordinates(e.latlng);
                     });
@@ -248,21 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Geoman Toolbar Controls, hide or enable it from filament resource
                 if (config.geoManToolbar.show) {
-                    this.map.pm.addControls({
-                        position: config.geoManToolbar.position,
-                        rotateMode: config.geoManToolbar.rotateMode,
-                        drawCircleMarker: config.geoManToolbar.drawCircleMarker,
-                        drawMarker: config.geoManToolbar.drawMarker,
-                        drawPolygon: config.geoManToolbar.drawPolygon,
-                        drawPolyline: config.geoManToolbar.drawPolyline,
-                        drawCircle: config.geoManToolbar.drawCircle,
-                        drawText: config.geoManToolbar.drawText,
-                        editMode: config.geoManToolbar.editMode,
-                        dragMode: config.geoManToolbar.dragMode,
-                        cutPolygon: config.geoManToolbar.cutPolygon,
-                        editPolygon: config.geoManToolbar.editPolygon,
-                        deleteLayer: config.geoManToolbar.deleteLayer
-                    });
+                    this.map.pm.addControls(config.geoManToolbar);
 
                     let drawItems = new LF.FeatureGroup().addTo(this.map);
 
@@ -493,16 +480,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             },
 
-            // Returns a standard marker element
+            // Returns a standard svg marker
             defaultIconMarker: function(markerColor){
                 return `<svg xmlns="http://www.w3.org/2000/svg" class="map-icon" fill="${markerColor}" width="32" height="32" viewBox="0 0 24 24"><path d="M12 0c-4.198 0-8 3.403-8 7.602 0 4.198 3.469 9.21 8 16.398 4.531-7.188 8-12.2 8-16.398 0-4.199-3.801-7.602-8-7.602zm0 11c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3-1.343 3-3 3z"/></svg>`;
             },
 
             updateMarker: function() {
-                if (config.showMarker) {
+                if (config.showMarker && this.marker) {
                     this.marker.setLatLng(this.getCoordinates());
                     this.setMarkerRange();
-                    setTimeout(() => this.updateLocation(), 500);
+                    this.updateLocation();
                 }
             },
 
@@ -529,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             iconSize: [config.iconSize, config.iconSize]
                         });
                     } else {
-                        // Use the default icon
                         const markerColor = this.config.markerColor || "#3b82f6";
                         newIcon = LF.divIcon({
                             html: this.defaultIconMarker(markerColor),
@@ -570,13 +556,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         return true;
                     },
-                    // Optionally specify width/height:
                     width: mapContainer.offsetWidth,
                     height: mapContainer.offsetHeight
                 }).then((blob) => {
 
                     if(!blob || !(blob instanceof Blob)){
-                        throw new Error('domtoimage did not return a valid blob object');
+                        throw new Error('Image snapshot did not return a valid blob object');
                     }
 
                     // Create a FormData object
@@ -600,16 +585,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.error('Error uploading map image:', data.message);
                                 alert('Error uploading map image:'+ data.message);
                             }
-                        })
-                        .catch((error) => {
+                        }).catch((error) => {
                             console.error('Error uploading map image:', error);
-                            alert('Error capturing map image:'+ error);
+                            alert('Error capturing map image:' + error);
                         });
-                })
-                    .catch((error) => {
-                        console.error('Error capturing map image:', error);
-                        alert('Error capturing map image:'+ error);
-                    });
+                }).catch((error) => {
+                    console.error('Error capturing map image:', error);
+                    alert('Error capturing map image:' + error);
+                });
             },
 
             // Function to create shapes based in the geojson file from filament file field
@@ -662,22 +645,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.rangeSelectField = document.getElementById(config.rangeSelectField || 'data.distance');
 
                 $wire.on('refreshMap', this.refreshMap.bind(this));
-
-                $wire.on('captureMapImage', () => {
-                    this.captureAndUploadMapImage();
-                });
+                $wire.on('captureMapImage', () => { this.captureAndUploadMapImage(); });
+                $wire.on('updateMarkerIcon', (icon) => { this.updateMarkerIcon(icon); });
+                $wire.on('loadGeoJsonDataFromFile', (data) => { this.loadGeoJsonDataFromFile(data); });
 
                 $wire.on('updateMapLocation', (coordinates) => {
                     const { lat, lng, fix } = coordinates[0];
                     this.updateMapLocation(lat,lng,fix);
-                });
-
-                $wire.on('updateMarkerIcon', (icon) => {
-                    this.updateMarkerIcon(icon);
-                });
-
-                $wire.on('loadGeoJsonDataFromFile', (data) => {
-                    this.loadGeoJsonDataFromFile(data);
                 });
             }
         };

@@ -1,6 +1,6 @@
 {
     "name": "filament-map-picker",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "description": "A filament plugin designed to simplify the process of selecting a location on a map and obtaining its geo-coordinates with the ease of having the Geoman plugin embedded.",
     "private": true,
     "type": "module",
@@ -30,10 +30,10 @@
         "postcss-url": "^10.1.3",
         "prettier": "^3.3.3",
         "prettier-plugin-tailwindcss": "^0.6.8",
-        "tailwindcss": "^3.3.3"
+        "tailwindcss": "^3.4.17"
     },
     "dependencies": {
-        "@geoman-io/leaflet-geoman-free": "^2.17.0",
+        "@geoman-io/leaflet-geoman-free": "^2.18.1",
         "dom-to-image": "^2.6.0",
         "esbuild-plugin-url": "^0.0.1",
         "file-saver": "^2.0.5",

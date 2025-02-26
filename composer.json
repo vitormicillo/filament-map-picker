@@ -1,6 +1,6 @@
 {
     "name": "doode/filament-map-picker",
-    "description": "Easily pick and retrieve geo-coordinates using a map-based interface with geoman extension map draw tools.",
+    "description": "Easily pick and retrieve geo-coordinates using a map-based interface with geoman.io extension map draw tools.",
     "keywords": [
         "doode",
         "laravel",
@@ -23,7 +23,7 @@
         {
             "name": "Doode",
             "email": "doode@doode.com.br",
-            "role": "Developer"
+            "role": "Software Engineer"
         }
     ],
     "require": {
