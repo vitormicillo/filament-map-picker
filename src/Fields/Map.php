@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Doode\MapPicker\Fields;
 
+use Closure;
 use Doode\MapPicker\Contracts\MapOptions;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Concerns\HasStateBindingModifiers;
@@ -12,19 +13,14 @@ class Map extends Field implements MapOptions
 {
     use HasStateBindingModifiers;
 
-    /**
-     * Field view
-     */
-    public string $view = 'map-picker::fields.osm-map-picker';
+    protected string $view = 'map-picker::fields.osm-map-picker';
 
-    /**
-     * Main field config variables
-     */
-    private array $mapConfig = [
+    protected array $mapConfig = [
         'statePath' => '',
         'draggable' => true,
         'showMarker' => true,
-        'tilesUrl' => 'http://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'baseLayers' => [],
+        'defaultBaseLayer' => 'OpenStreetMap',
         'attribution' => null,
         'zoomOffset' => -1,
         'tileSize' => 512,
@@ -33,12 +29,16 @@ class Map extends Field implements MapOptions
         'minZoom' => 1,
         'maxZoom' => 28,
         'zoom' => 8,
-        'liveLocation' => false,
-        'bounds' => false,
-        'showMyLocationButton' => [false, false, 5000],
+        'bounds' => false, // No need for nested structure initially.
+        'showMyLocationButton' => false, // Single boolean value
         'default' => ['lat' => 0, 'lng' => 0],
         'markerColor' => '#3b82f6',
         'iconSize' => 32,
+        'liveLocation' => [
+            'send' => false,
+            'realtime' => false,
+            'milliseconds' => 5000,
+        ],
         'geoManToolbar' => [
             'show' => true,
             'editable' => true,
@@ -50,25 +50,24 @@ class Map extends Field implements MapOptions
             'drawPolyline' => true,
             'drawCircle' => true,
             'dragMode' => true,
-            'cutPolygon' => true,
             'editPolygon' => true,
+            'cutPolygon' => true,
             'deleteLayer' => true,
             'color' => '#3388ff',
             'filledColor' => '#cad9ec',
             'snappable' => false,
-            'snapDistance'  => 20,
+            'snapDistance' => 20,
             'drawText' => false,
-            'drawRectangle' => true
+            'drawRectangle' => true,
         ],
+        'overlayLayers' => [],
+        'clickable' => false, // Initialize clickable
     ];
 
-    /**
-     * Leaflet controls variables
-     */
-    private array $controls = [
+    protected array $controls = [
         'zoomControl' => true,
         'scrollWheelZoom' => 'center',
-        'doubleClickZoom' => 'center',
+        'doubleClickZoom' => 'center', // consistent string values.
         'touchZoom' => 'center',
         'minZoom' => 1,
         'maxZoom' => 28,
@@ -76,21 +75,16 @@ class Map extends Field implements MapOptions
         'fullscreenControl' => true,
     ];
 
-    private array $extraStyle = [];
+    protected array $extraStyle = [];
 
-    /**
-     * Extra leaflet controls variables
-     */
-    private array $extraControls = [];
+    protected array $extraControls = [];
 
-    /**
-     * Create json configuration string
-     */
     public function getMapConfig(): string
     {
         $statePath = $this->getStatePath();
         $lastDotPosition = mb_strrpos($statePath, '.');
         $rangeSelectField = mb_substr($statePath, 0, $lastDotPosition + 1).$this->mapConfig['rangeSelectField'];
+
         return json_encode(
             array_merge($this->mapConfig, [
                 'statePath' => $statePath,
@@ -100,68 +94,53 @@ class Map extends Field implements MapOptions
         );
     }
 
-    /**
-     * Create extra styles string
-     */
     public function getExtraStyle(): string
     {
         return implode(';', $this->extraStyle);
     }
 
-    /**
-     * Determines if the user can click to place the marker on the map.
-     * @return $this
-     */
-    public function clickable(bool $clickable): self
+    public function clickable(bool|Closure $clickable = true): static  // Use static and allow Closures
     {
         $this->mapConfig['clickable'] = $clickable;
+
         return $this;
     }
 
-    /**
-     * Determine if user can drag map around or not.
-     * @return MapOptions
-     * @note Default value is false
-     */
-    public function draggable(bool $draggable = true): self
+    public function draggable(bool|Closure $draggable = true): static
     {
         $this->mapConfig['draggable'] = $draggable;
+
         return $this;
     }
 
-    /**
-     * Prevents the map from panning outside the defined box, and sets
-     * a default location in the center of the box. It makes sense to
-     * use this with a minimum zoom that suits the size of your map and
-     * the size of the box or the way it pans back to the bounding box
-     * looks strange. You can call with $on set to false to undo this.
-     */
-    public function boundaries(bool $on, int|float $southWestLat = 0, int|float $southWestLng = 0, int|float $northEastLat = 0, int|float $northEastLng = 0): self
+    public function boundaries(bool|Closure $on, float|int|Closure $southWestLat = 0, float|int|Closure $southWestLng = 0, float|int|Closure $northEastLat = 0, float|int|Closure $northEastLng = 0): static
     {
-        if (!$on) {
-            $this->mapConfig['boundaries'] = false;
-
-            return $this;
+        if (is_bool($on) && ! $on) {  // Only set to false if $on is a boolean and false.
+            $this->mapConfig['bounds'] = false;
+        } else {
+            $this->mapConfig['bounds'] = [ // Set bounds when enabled.
+                'sw' => ['lat' => $southWestLat, 'lng' => $southWestLng],
+                'ne' => ['lat' => $northEastLat, 'lng' => $northEastLng],
+            ];
         }
 
-        $this->mapConfig['bounds']['sw'] = ['lat' => $southWestLat, 'lng' => $southWestLng];
-        $this->mapConfig['bounds']['ne'] = ['lat' => $northEastLat, 'lng' => $northEastLng];
-        $this->defaultLocation(($southWestLat + $northEastLat) / 2.0, ($southWestLng + $northEastLng) / 2.0);
+        // Calculate and set the default location *only if* bounds are being set.
+        if (false !== $this->mapConfig['bounds']) {
+            $this->defaultLocation(
+                ($southWestLat + $northEastLat) / 2.0,
+                ($southWestLng + $northEastLng) / 2.0
+            );
+        }
 
         return $this;
     }
 
-    /**
-     * Convenience function for appropriate values for boundaries() when
-     * you want the British Isles
-     **/
-    public function setBoundsToBritishIsles(): self
+    public function setBoundsToBritishIsles(): static
     {
-        $this->boundaries(true, 49.5, -11, 61, 2);
-        return $this;
+        return $this->boundaries(true, 49.5, -11, 61, 2); // Use return for chaining.
     }
 
-    public function defaultLocation(float|int $latitude, float|int $longitude): self
+    public function defaultLocation(float|int|Closure $latitude, float|int|Closure $longitude): static
     {
         $this->mapConfig['default']['lat'] = $latitude;
         $this->mapConfig['default']['lng'] = $longitude;
@@ -169,364 +148,300 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
-    /**
-     * Set extra style
-     */
-    public function extraStyles(array $styles = []): self
+    public function extraStyles(array|Closure $styles = []): static
     {
         $this->extraStyle = $styles;
+
         return $this;
     }
 
-    /**
-     * Set default zoom
-     * @return MapOptions
-     * @note Default value 8
-     */
-    public function zoom(int $zoom): self
+    public function zoom(int|Closure $zoom): static
     {
-        $this->controls['zoom'] = $zoom;
+        $this->controls['zoom'] = $zoom;  // Directly modify controls.
+
         return $this;
     }
 
-    /**
-     * Set max zoom
-     * @return $this
-     * @note Default value 28
-     */
-    public function maxZoom(int $maxZoom): self
+    public function maxZoom(int|Closure $maxZoom): static
     {
         $this->controls['maxZoom'] = $maxZoom;
+
         return $this;
     }
 
-    /**
-     * Set min zoom
-     * @param  int  $maxZoom
-     * @return $this
-     * @note Default value 1
-     */
-    public function minZoom(int $minZoom): self
+    public function minZoom(int|Closure $minZoom): static
     {
         $this->controls['minZoom'] = $minZoom;
+
         return $this;
     }
 
-    /**
-     * Determine if marker is visible or not.
-     * @return $this
-     * @note Default value is true
-     */
-    public function showMarker(bool $show = true): self
+    public function showMarker(bool|Closure $show = true): static
     {
         $this->mapConfig['showMarker'] = $show;
+
         return $this;
     }
 
-    /**
-     * Set tiles url
-     * @return $this
-     */
-    public function tilesUrl(string $url): self
+    public function baseLayers(array|Closure $layers): static
     {
-        $this->mapConfig['tilesUrl'] = $url;
+        $this->mapConfig['baseLayers'] = $layers;
+
         return $this;
     }
 
-    /**
-     * Use the value of another field on the form for the range of the
-     * circle surrounding the marker
-     * @param string $rangeSelectField
-     * return $this
-     **/
-    public function rangeSelectField(string $rangeSelectField): self
+    public function defaultBaseLayer(string|Closure $layerName): static
+    {
+        $this->mapConfig['defaultBaseLayer'] = $layerName;
+
+        return $this;
+    }
+
+    public function rangeSelectField(string|Closure $rangeSelectField): static
     {
         $this->mapConfig['rangeSelectField'] = $rangeSelectField;
+
         return $this;
     }
 
-    /**
-     * Determine if it detects retina monitors or not.
-     * @return $this
-     */
-    public function detectRetina(bool $detectRetina = true): self
+    public function detectRetina(bool|Closure $detectRetina = true): static
     {
         $this->mapConfig['detectRetina'] = $detectRetina;
+
         return $this;
     }
 
-    /**
-     * Determine if zoom box is visible or not.
-     * @return $this
-     */
-    public function showZoomControl(bool $show = true): self
+    public function showZoomControl(bool|Closure $show = true): static
     {
         $this->controls['zoomControl'] = $show;
+
         return $this;
     }
 
-    /**
-     * Determine if fullscreen box is visible or not.
-     * @return $this
-     */
-    public function showFullscreenControl(bool $show = true): self
+    public function showFullscreenControl(bool|Closure $show = true): static
     {
         $this->controls['fullscreenControl'] = $show;
+
         return $this;
     }
 
-    /**
-     * Change the marker color.
-     * @return $this
-     */
-    public function markerColor(string $color): self
+    public function markerColor(string|Closure $color): static
     {
         $this->mapConfig['markerColor'] = $color;
+
         return $this;
     }
 
-    /**
-     * Change the marker icon size
-     */
-    public function iconSize(int $size): self
+    public function iconSize(int|Closure $size): static
     {
         $this->mapConfig['iconSize'] = $size;
+
         return $this;
     }
 
-    /**
-     * Enable or disable live location updates for the map
-     * @return $this
-     */
-    public function liveLocation(bool $send = true, bool $realtime = false, int $milliseconds = 5000): self
+    public function liveLocation(bool|Closure $send = true, bool|Closure $realtime = false, int|Closure $milliseconds = 5000): static
     {
         $this->mapConfig['liveLocation'] = [
             'send' => $send,
             'realtime' => $realtime,
             'milliseconds' => $milliseconds,
         ];
+
         return $this;
     }
 
-    /**
-     * Enable or disable show my location button on map.
-     * @return $this
-     */
-    public function showMyLocationButton(bool $showMyLocationButton = true): self
+    public function showMyLocationButton(bool|Closure $showMyLocationButton = true): static
     {
         $this->mapConfig['showMyLocationButton'] = $showMyLocationButton;
+
         return $this;
     }
 
-    /**
-     * Append extra controls to be passed to leaflet map object
-     * @return $this
-     */
-    public function extraControl(array $control): self
+    public function extraControl(array|Closure $control): static
     {
         $this->extraControls = array_merge($this->extraControls, $control);
+
         return $this;
     }
 
-    /**
-     * Append extra controls to be passed to leaflet tileLayer object
-     * @return $this
-     */
-    public function extraTileControl(array $control): self
+    public function extraTileControl(array|Closure $control): static
     {
+        //  This modifies mapConfig directly, not extraControls (which is for Leaflet *map* controls, not tile layer options)
         $this->mapConfig = array_merge($this->mapConfig, $control);
+
         return $this;
     }
 
-    /**
-     * Enable or disable GeoMan functionality.
-     * @return $this
-     */
-    public function geoManToolbar(bool $show = true): self
+    public function geoManToolbar(bool|Closure $show = true): static
     {
         $this->mapConfig['geoManToolbar']['show'] = $show;
+
         return $this;
     }
 
-    /**
-     * Enable or disable GeoMan edit mode.
-     * @return $this
-     */
     public function geoManEditable(bool $show = true): self
     {
         $this->mapConfig['geoManToolbar']['editable'] = $show;
         return $this;
     }
 
-    /**
-     * Set GeoMan control position.
-     * @return $this
-     * @note Valid values: 'topleft', 'topright', 'bottomleft', 'bottomright'
-     */
-    public function geoManPosition(string $position = 'topleft'): self
+    public function geoManPosition(string|Closure $position = 'topleft'): static
     {
         $this->mapConfig['geoManToolbar']['position'] = $position;
+
         return $this;
     }
 
-    /**
-     * Enable or disable drawing of circle markers.
-     * @return $this
-     */
-    public function drawCircleMarker(bool $draw = true): self
+    public function drawCircleMarker(bool|Closure $draw = true): static
     {
         $this->mapConfig['geoManToolbar']['drawCircleMarker'] = $draw;
+
         return $this;
     }
 
-    /**
-     * Enable or disable rotate mode.
-     * @return $this
-     */
-    public function rotateMode(bool $rotate = true): self
+    public function rotateMode(bool|Closure $rotate = true): static
     {
         $this->mapConfig['geoManToolbar']['rotateMode'] = $rotate;
+
         return $this;
     }
 
-    /**
-     * Enable or disable drawing of markers.
-     * @return $this
-     */
-    public function drawMarker(bool $draw = true): self
+    public function drawMarker(bool|Closure $draw = true): static
     {
         $this->mapConfig['geoManToolbar']['drawMarker'] = $draw;
+
         return $this;
     }
 
-    /**
-     * Enable or disable drawing of polygons.
-     * @return $this
-     */
-    public function drawPolygon(bool $draw = true): self
+    public function drawPolygon(bool|Closure $draw = true): static
     {
         $this->mapConfig['geoManToolbar']['drawPolygon'] = $draw;
+
         return $this;
     }
 
-    /**
-     * Enable or disable drawing of polylines.
-     * @return $this
-     */
-    public function drawPolyline(bool $draw = true): self
-    {
-        $this->mapConfig['geoManToolbar']['drawPolyline'] = $draw;
-        return $this;
-    }
-
-    /**
-     * Enable or disable drawing of circles.
-     * @return $this
-     */
-    public function drawCircle(bool $draw = true): self
-    {
-        $this->mapConfig['geoManToolbar']['drawCircle'] = $draw;
-        return $this;
-    }
-
-    /**
-     * Enable or disable Snappable.
-     * @param bool $draw
-     * @return $this
-     */
-    public function snappable(bool $snappable = true, int $distance = 20): self
-    {
-        $this->mapConfig['geoManToolbar']['snappable'] = $snappable;
-        $this->mapConfig['geoManToolbar']['snapDistance'] = $distance;
-        return $this;
-    }
-
-    /**
-     * Enable or disable drawing of rectangle.
-     * @param bool $draw
-     * @return $this
-     */
-    public function drawRectangle(bool $draw = true): self
-    {
-        $this->mapConfig['geoManToolbar']['drawRectangle'] = $draw;
-        return $this;
-    }
-
-    /**
-     * Enable or disable drawing of texts.
-     * @return $this
-     */
-    public function drawText(bool $draw = true): self
-    {
-        $this->mapConfig['geoManToolbar']['drawText'] = $draw;
-        return $this;
-    }
-
-    /**
-     * Enable or disable editing of polygons.
-     * @return $this
-     */
     public function editPolygon(bool $edit = true): self
     {
         $this->mapConfig['geoManToolbar']['editPolygon'] = $edit;
+
         return $this;
     }
 
-    /**
-     * Enable or disable deletion of layers.
-     * @return $this
-     */
-    public function deleteLayer(bool $delete = true): self
+    public function drawPolyline(bool|Closure $draw = true): static
+    {
+        $this->mapConfig['geoManToolbar']['drawPolyline'] = $draw;
+
+        return $this;
+    }
+
+    public function drawCircle(bool|Closure $draw = true): static
+    {
+        $this->mapConfig['geoManToolbar']['drawCircle'] = $draw;
+
+        return $this;
+    }
+
+    public function snappable(bool|Closure $snappable = true, int|Closure $distance = 20): static
+    {
+        $this->mapConfig['geoManToolbar']['snappable'] = $snappable;
+        $this->mapConfig['geoManToolbar']['snapDistance'] = $distance;
+
+        return $this;
+    }
+
+    public function drawRectangle(bool|Closure $draw = true): static
+    {
+        $this->mapConfig['geoManToolbar']['drawRectangle'] = $draw;
+
+        return $this;
+    }
+
+    public function drawText(bool|Closure $draw = true): static
+    {
+        $this->mapConfig['geoManToolbar']['drawText'] = $draw;
+
+        return $this;
+    }
+
+    public function deleteLayer(bool|Closure $delete = true): static
     {
         $this->mapConfig['geoManToolbar']['deleteLayer'] = $delete;
+
         return $this;
     }
 
-    /**
-     * Enable or disable drag mode.
-     * @return $this
-     */
-    public function dragMode(bool $enable = true): self
+    public function dragMode(bool|Closure $enable = true): static
     {
         $this->mapConfig['geoManToolbar']['dragMode'] = $enable;
+
         return $this;
     }
 
-    /**
-     * Enable or disable polygon cutting.
-     * @return $this
-     */
-    public function cutPolygon(bool $enable = true): self
+    public function cutPolygon(bool|Closure $enable = true): static
     {
         $this->mapConfig['geoManToolbar']['cutPolygon'] = $enable;
+
         return $this;
     }
 
-    /**
-     * Set the stroke color for drawings.
-     * @return $this
-     */
-    public function setColor(string $color): self
+    public function setColor(string|Closure $color): static
     {
         $this->mapConfig['geoManToolbar']['color'] = $color;
+
         return $this;
     }
 
-    /**
-     * Set the fill color for drawings.
-     * @return $this
-     */
-    public function setFilledColor(string $filledColor): self
+    public function setFilledColor(string|Closure $filledColor): static
     {
         $this->mapConfig['geoManToolbar']['filledColor'] = $filledColor;
+
         return $this;
     }
 
-    /**
-     * Setup function
-     */
+    public function overlayLayers(array|Closure $layers): static
+    {
+        $this->mapConfig['overlayLayers'] = $layers;
+
+        return $this;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
+        //        // Calculate rangeSelectField *once* during setup.
+        //        $this->mapConfig['rangeSelectField'] = function ($component) {
+        //            $statePath = $component->getStatePath();
+        //            $lastDotPosition = mb_strrpos($statePath, '.');
+        //            // Handle cases where there's no dot (top-level field).
+        //            $rangeSelectField = ($lastDotPosition !== false)
+        //                ? mb_substr($statePath, 0, $lastDotPosition + 1) . $this->mapConfig['rangeSelectField']
+        //                : $this->mapConfig['rangeSelectField'];  // Or some default, perhaps.
+        //            return $rangeSelectField;
+        //
+        //        };
+        //
+        //        // Dehydrate the mapConfig values.
+        //        $this->dehydrateStateUsing(function (Map $component, $state) {
+        //            // Ensure that any Closures in mapConfig are resolved.
+        //            $config = $component->getMapConfig(); // Get the *JSON string*
+        //            $configArray = json_decode($config, true); // Decode to array.
+        //
+        //            // Resolve any closures.
+        //            array_walk_recursive($configArray, function (&$value) use ($component) {
+        //                if ($value instanceof Closure) {
+        //                    $value = $value($component);
+        //                }
+        //            });
+        //
+        //            // Return the *JSON encoded* string.  This is the crucial fix.
+        //            return json_encode($configArray); // Encode back to JSON
+        //        });
+        //
+        //
+        //        // Because the map component is dependant of rangeSelectField
+        //        // we need to re-evaluate rangeSelectField if it changes
+        //        $this->afterStateUpdated(function (Map $component): void {
+        //            $component->getLivewire()->dispatch('refreshMap');
+        //        });
     }
 }
