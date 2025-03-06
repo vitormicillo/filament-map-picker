@@ -91,6 +91,7 @@ class FilamentResource extends Resource
                 ->extraControl(['zoomDelta' => 1, 'zoomSnap' => 2])
                 
                 // Layers Configuration From version 1.6
+                // Standard Maps
                 ->baseLayers([
                         [
                             'name' => 'OpenStreetMap',
@@ -119,6 +120,25 @@ class FilamentResource extends Resource
                             'minZoom' => 1,
                             'maxZoom' => 18,
                             'opacity' => 0.5,
+                            'visibleByDefault' => false
+                        ],
+                        // New options from version 1.6.2
+                        [
+                            'name' => 'Marker points or areas',
+                            'url' => "api_url",
+                            'type' => 'api',
+                            'minZoom' => 1,
+                            'maxZoom' => 18,
+                            'attribution' => '',
+                            'visibleByDefault' => false
+                        ],
+                        [
+                            'name' => 'Cities',
+                            'url' => asset('geojson/cities.geojson'),
+                            'type' => 'geojson',
+                            'minZoom' => 1,
+                            'maxZoom' => 18,
+                            'attribution' => '',
                             'visibleByDefault' => false
                         ]
                     ])
