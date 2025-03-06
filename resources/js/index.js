@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // Fallback to a default OpenStreetMap layer if no layers are configured
                     this.baseLayers['OpenStreetMap'] = LF.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        attribution: ''
                     }).addTo(this.map);
                 }
                 // Create the layers control and position, including overlays.  Do this *after* base layers are set up.
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- Overlay Layer Setup ---
                 if (config.overlayLayers && Array.isArray(config.overlayLayers) && config.overlayLayers.length > 0) {
                     config.overlayLayers.forEach(layerConfig => {
-                        if (!layerConfig.url) {
+                        if (!layerConfig.url && layerConfig.type !== 'api') {
                             console.error("Overlay layer configuration is missing 'url':", layerConfig);
                             alert("Error: Overlay layer configuration is missing 'url'. See console for details.");
                             return; // Skip this layer
@@ -133,16 +133,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         let overlayLayer;
 
-                        // Check if it's a GeoJSON layer or a regular tile layer
-                        if (layerConfig.type === 'geojson') {
-                            fetch(layerConfig.url)
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP error! status: ${response.status}`);
+                        if (layerConfig.type === 'api') {
+                            const preloadedItems = new LF.FeatureGroup();
+                            const apiData = layerConfig.data;
+                            console.log(apiData);
+                            // Defensive checks:
+                            if (!apiData || !Array.isArray(apiData.features)) {
+                                console.warn('No valid features found in API data:', apiData);
+                            } else {
+                                // For each item in apiData.features
+                                apiData.features.forEach((item, index) => {
+                                    if (item.coordinates) {
+                                        LF.geoJSON(item.coordinates, {
+                                            style: {
+                                                color: 'Red',
+                                                fillColor: 'Black',
+                                                fillOpacity: 0.0
+                                            },
+                                        }).addTo(preloadedItems);
+                                    } else {
+                                        console.warn(`API feature at index ${index} has no valid "coordinates" property.`, item);
                                     }
-                                    return response.json();
-                                })
+                                });
+                            }
+
+                            // Add to overlay
+                            this.overlayLayers[layerConfig.name] = preloadedItems;
+                            this.layersControl.addOverlay(preloadedItems, layerConfig.name);
+
+                            // Make visible if user wants
+                            if (layerConfig.visibleByDefault) {
+                                preloadedItems.addTo(this.map);
+                            }
+
+                        } else if (layerConfig.type === 'geojson') {
+                            fetch(layerConfig.url)
+                                // .then(response => {
+                                //     if (!response.ok) {
+                                //         throw new Error(`HTTP error! status: ${response.status}`);
+                                //     }
+                                //     return response.json();
+                                // })
                                 .then(data => {
+                                    console.log('geojson', data)
                                     overlayLayer = LF.geoJSON(data, {
                                         style: layerConfig.style || {},
                                         onEachFeature: layerConfig.onEachFeature,
@@ -160,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     console.error("Error loading GeoJSON layer:", error);
                                     alert("Error loading GeoJSON layer: " + error.message); // User-friendly error
                                 });
+
                         } else {
                             // Assume it's a tile layer
                             overlayLayer = LF.tileLayer(layerConfig.url, {
