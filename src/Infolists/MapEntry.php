@@ -51,7 +51,8 @@ class MapEntry extends Entry implements MapOptions
             'dragMode' => true,
             'deleteLayer' => true,
             'color' => '#3388ff',
-            'filledColor' => '#cad9ec',
+            'borderColor' => '#ffffff',
+            'fillColor' => '#ffffff',
             'snappable' => false,
             'snapDistance' => 20,
             'drawText' => false,
@@ -374,6 +375,13 @@ class MapEntry extends Entry implements MapOptions
         return $this;
     }
 
+    public function setBorderColor(string|Closure $borderColor): static
+    {
+        $this->mapConfig['geoManToolbar']['borderColor'] = $borderColor;
+
+        return $this;
+    }
+
     public function setColor(string|Closure $color): static
     {
         $this->mapConfig['geoManToolbar']['color'] = $color;
@@ -381,9 +389,9 @@ class MapEntry extends Entry implements MapOptions
         return $this;
     }
 
-    public function setFilledColor(string|Closure $filledColor): static
+    public function setFillColor(string|Closure $fillColor): static
     {
-        $this->mapConfig['geoManToolbar']['filledColor'] = $filledColor;
+        $this->mapConfig['geoManToolbar']['fillColor'] = $fillColor;
 
         return $this;
     }

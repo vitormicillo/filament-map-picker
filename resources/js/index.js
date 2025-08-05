@@ -168,12 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         } else if (layerConfig.type === 'geojson') {
                             fetch(layerConfig.url)
-                                // .then(response => {
-                                //     if (!response.ok) {
-                                //         throw new Error(`HTTP error! status: ${response.status}`);
-                                //     }
-                                //     return response.json();
-                                // })
                                 .then(data => {
                                     console.log('geojson', data)
                                     overlayLayer = LF.geoJSON(data, {
@@ -285,6 +279,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (config.geoManToolbar.show) {
                     this.map.pm.addControls(config.geoManToolbar);
 
+                    this.map.pm.setPathOptions({
+                        color: config.borderColor || '#FFFFFF',
+                        fillColor: config.fillColor || '#FFFFFF',
+                        fillOpacity: 0.5
+                    });
+
                     let drawItems = new LF.FeatureGroup().addTo(this.map);
 
                     // If GeoJsonBox is available load all necessary
@@ -297,9 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Create the GeoJSON layer and add it to the map
                             drawItems = LF.geoJSON(geomData, {
                                 style: {
-                                    color: config.liveLocation?.color || "#FFFFFF",
-                                    fillColor: 'blue',
-                                    fillOpacity: 0.5,
+                                    color: config.borderColor || '#FFFFFF',
+                                    fillColor: config.fillColor || '#FFFFFF',
+                                    fillOpacity: 0.5
                                 }
                             }).addTo(this.map);
 
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     this.rangeCircle.setLatLng(this.getCoordinates()).setRadius(distance);
                 } else {
                     this.rangeCircle = LF.circle(this.getCoordinates(), {
-                        color: 'blue',
+                        color: '#3b82f6',
                         fillColor: '#f03',
                         fillOpacity: 0.5,
                         radius: distance // The radius in meters
@@ -645,8 +645,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const newGeoJsonLayer = LF.geoJSON(coordinates, {
                         style: {
-                            color: "#FFFFFF",
-                            fillColor: 'blue',
+                            color: config.borderColor || '#FFFFFF',
+                            fillColor: config.fillColor || '#FFFFFF',
                             fillOpacity: 0.5
                         }
                     }).addTo(this.drawItems);

@@ -46,8 +46,9 @@ interface MapOptions
     public function deleteLayer(bool|Closure $delete = true): static;
     public function dragMode(bool|Closure $enable = true): static;
     public function cutPolygon(bool|Closure $enable = true): static;
+    public function setBorderColor(string|Closure $borderColor): static;
     public function setColor(string|Closure $color): static;
-    public function setFilledColor(string|Closure $filledColor): static;
+    public function setFillColor(string|Closure $fillColor): static;
     public function baseLayers(array|Closure $layers): static;
     public function defaultBaseLayer(string|Closure $layerName): static;
     public function overlayLayers(array|Closure $layers): static; // Add overlayLayers
