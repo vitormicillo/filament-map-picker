@@ -152,7 +152,7 @@ class FilamentResource extends Resource
                 
                 // Marker Configuration
                 ->showMarker()
-                ->markerColor("#22c55eff")
+                ->markerColor("#22c55e")
                 ->clickable() // Click to set marker
                 ->iconSize(32) // Icon size
                 
@@ -172,7 +172,7 @@ class FilamentResource extends Resource
                 ->editPolygon(true)
                 ->deleteLayer(true)
                 ->setColor('#3388ff')
-                ->setFilledColor('#cad9ec') // Color inside the shapes
+                ->setFillColor('#cad9ec') // Color inside the shapes
                 
                 //State Management
                 ->afterStateUpdated(function (callable $set, ?array $state): void {
@@ -251,7 +251,7 @@ Fieldset::make('Location')
             ->detectRetina()
             ->defaultLocation(latitude: 40.4168, longitude: -3.7038)
             ->rangeSelectField('distance')
-            ->setFilledColor('#cad9ec'),
+            ->setFillColor('#cad9ec'),
             //->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png") //Not in use from version 1.6.0
     ])
     ->columns(1),
