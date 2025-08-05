@@ -54,7 +54,8 @@ class Map extends Field implements MapOptions
             'cutPolygon' => true,
             'deleteLayer' => true,
             'color' => '#3388ff',
-            'filledColor' => '#cad9ec',
+            'borderColor' => '#ffffff',
+            'fillColor' => '#ffffff',
             'snappable' => false,
             'snapDistance' => 20,
             'drawText' => false,
@@ -384,6 +385,13 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
+    public function setBorderColor(string|Closure $borderColor): static
+    {
+        $this->mapConfig['geoManToolbar']['borderColor'] = $borderColor;
+
+        return $this;
+    }
+
     public function setColor(string|Closure $color): static
     {
         $this->mapConfig['geoManToolbar']['color'] = $color;
@@ -391,9 +399,9 @@ class Map extends Field implements MapOptions
         return $this;
     }
 
-    public function setFilledColor(string|Closure $filledColor): static
+    public function setFillColor(string|Closure $fillColor): static
     {
-        $this->mapConfig['geoManToolbar']['filledColor'] = $filledColor;
+        $this->mapConfig['geoManToolbar']['fillColor'] = $fillColor;
 
         return $this;
     }
@@ -408,40 +416,5 @@ class Map extends Field implements MapOptions
     protected function setUp(): void
     {
         parent::setUp();
-        //        // Calculate rangeSelectField *once* during setup.
-        //        $this->mapConfig['rangeSelectField'] = function ($component) {
-        //            $statePath = $component->getStatePath();
-        //            $lastDotPosition = mb_strrpos($statePath, '.');
-        //            // Handle cases where there's no dot (top-level field).
-        //            $rangeSelectField = ($lastDotPosition !== false)
-        //                ? mb_substr($statePath, 0, $lastDotPosition + 1) . $this->mapConfig['rangeSelectField']
-        //                : $this->mapConfig['rangeSelectField'];  // Or some default, perhaps.
-        //            return $rangeSelectField;
-        //
-        //        };
-        //
-        //        // Dehydrate the mapConfig values.
-        //        $this->dehydrateStateUsing(function (Map $component, $state) {
-        //            // Ensure that any Closures in mapConfig are resolved.
-        //            $config = $component->getMapConfig(); // Get the *JSON string*
-        //            $configArray = json_decode($config, true); // Decode to array.
-        //
-        //            // Resolve any closures.
-        //            array_walk_recursive($configArray, function (&$value) use ($component) {
-        //                if ($value instanceof Closure) {
-        //                    $value = $value($component);
-        //                }
-        //            });
-        //
-        //            // Return the *JSON encoded* string.  This is the crucial fix.
-        //            return json_encode($configArray); // Encode back to JSON
-        //        });
-        //
-        //
-        //        // Because the map component is dependant of rangeSelectField
-        //        // we need to re-evaluate rangeSelectField if it changes
-        //        $this->afterStateUpdated(function (Map $component): void {
-        //            $component->getLivewire()->dispatch('refreshMap');
-        //        });
     }
 }
