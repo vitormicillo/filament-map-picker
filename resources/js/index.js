@@ -124,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     config.overlayLayers.forEach(layerConfig => {
                         if (!layerConfig.url && layerConfig.type !== 'api') {
                             console.error("Overlay layer configuration is missing 'url':", layerConfig);
-                            alert("Error: Overlay layer configuration is missing 'url'. See console for details.");
                             return; // Skip this layer
                         }
                         if (!layerConfig.name) {
@@ -614,7 +613,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         .then(data => {
                             if (data.success) {
                                 console.info('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
-                                alert('Snapshot successfully generated. Note: Remember to save your form data before leaving the page.');
                             } else {
                                 console.error('Error uploading map image:', data.message);
                                 alert('Error uploading map image:'+ data.message);
